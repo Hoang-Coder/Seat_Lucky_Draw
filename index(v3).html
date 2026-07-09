@@ -1,0 +1,1959 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Xếp Chỗ Ngồi Lớp Học - Phát triển bởi Ky Anh nhớ 🤟</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+            overscroll-behavior: none;
+        }
+
+        /* Cuộn mượt hơn trên Safari/trackpad cho vùng nội dung chính */
+        @keyframes cellShiftPulse {
+            0% {
+                box-shadow: 0 0 0 3px rgba(16, 185, 129, .65);
+            }
+
+            100% {
+                box-shadow: 2px 2px 0px 0px rgba(41, 37, 36, 1);
+            }
+        }
+
+        .cell-shift-pulse {
+            animation: cellShiftPulse .5s ease-out;
+        }
+
+        /* Mũi tên dịch chuyển tổ/dãy bàn: ẩn mặc định (điều khiển opacity qua Tailwind
+           group-hover ở HTML), chỉ hiện khi rê chuột vào khu vực sơ đồ lớp (#classroom-grid) */
+        .shift-arrow-btn {
+            transition: opacity .2s ease, background-color .2s ease, border-color .2s ease, color .2s ease, transform .2s ease;
+        }
+
+        /* Tối ưu hóa thanh cuộn phong cách Retro tinh tế */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f5f5f4;
+            border-left: 2px solid #292524;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #d6d3d1;
+            border: 2px solid #292524;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a29e;
+        }
+
+        /* CON TRỎ NEON DI CHUYỂN */
+        #neon-shuttle-pointer {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            box-sizing: border-box;
+            display: none;
+            border: 3px solid #16a77b;
+            border-radius: 10px;
+            background: rgba(217, 119, 6, 0.08);
+            box-shadow: 4px 4px 0px #007A55;
+            animation: retroFlicker 0.15s infinite alternate;
+        }
+
+        @keyframes retroFlicker {
+            0% {
+                opacity: 0.95;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* HIỆU ỨNG CÁC Ô ĐỒNG BỘ THEO PHONG CÁCH RETRO */
+        .classroom-cell.neon-lock-active {
+            border: 3px solid #0f766e !important;
+            background: #f0fdfa !important;
+            border-radius: 10px;
+            transform: translate(-2px, -2px) scale(1.05) !important;
+            z-index: 10;
+            box-shadow: 6px 6px 0px #115e59 !important;
+            transition: all 0.3s ease-out;
+        }
+
+        .classroom-cell,
+        #waiting-list>div {
+            contain: layout style paint;
+            transition: transform .18s cubic-bezier(.22, .8, .32, 1),
+                box-shadow .18s cubic-bezier(.22, .8, .32, 1),
+                background-color .18s ease,
+                border-color .18s ease,
+                opacity .18s ease;
+        }
+
+        .classroom-cell {
+            aspect-ratio: 34 / 20;
+            height: auto;
+        }
+
+        /* KÉO THẢ HIỆN ĐẠI */
+        .dragging {
+            opacity: 0.35;
+            transform: scale(0.94) rotate(-2deg);
+            border-style: dashed !important;
+            box-shadow: none !important;
+        }
+
+        .drag-hover {
+            transform: translateY(-4px) scale(1.045) !important;
+            border-color: #2563eb !important;
+            background-color: #eff6ff !important;
+            box-shadow: 0 12px 20px -8px rgba(37, 99, 235, .35), 4px 4px 0px 0px rgba(37, 99, 235, .25) !important;
+            z-index: 20;
+        }
+
+        #custom-context-menu {
+            opacity: 0;
+            transform: scale(.95);
+            pointer-events: none;
+            transition:
+                opacity .12s ease,
+                transform .12s ease;
+        }
+
+        #custom-context-menu.opacity-100 {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #custom-context-menu.scale-100 {
+            transform: scale(1);
+        }
+
+        .menu-item {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 700;
+            transition: all .12s;
+        }
+
+        .menu-item:hover {
+            background: #ebe7df;
+            transform: translateX(5px);
+        }
+
+        .dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 999px;
+            border: 2px solid #444;
+            flex-shrink: 0;
+        }
+
+        .delete-btn {
+            width: 100%;
+            padding: 12px;
+            color: #dc2626;
+            font-weight: 800;
+            transition: .12s;
+        }
+
+        .delete-btn:hover {
+            background: #dc2626;
+            color: white;
+
+        }
+
+        @keyframes dropSettle {
+            0% {
+                transform: translateY(-20px) scale(1.12);
+                box-shadow: 0 18px 22px -10px rgba(0, 0, 0, .28);
+            }
+
+            55% {
+                transform: translateY(3px) scale(0.97);
+            }
+
+            75% {
+                transform: translateY(-1px) scale(1.015);
+            }
+
+            100% {
+                transform: translateY(0) scale(1);
+                box-shadow: 2px 2px 0px 0px rgba(41, 37, 36, 1);
+            }
+        }
+
+        .drop-settle {
+            animation: dropSettle .5s cubic-bezier(.34, 1.56, .64, 1);
+        }
+
+        @keyframes queueItemIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #waiting-list>div {
+            animation: queueItemIn .22s ease-out;
+        }
+
+        /* HIỆU ỨNG SÓNG QUÉT (WAVE EFFECT) KHI XẾP TỰ ĐỘNG */
+        @keyframes matrixFlicker {
+            0% {
+                color: #d97706;
+                opacity: 0.6;
+            }
+
+            50% {
+                color: #059669;
+                opacity: 1;
+            }
+
+            100% {
+                color: #2563eb;
+                opacity: 0.8;
+            }
+        }
+
+        .matrix-loading-text {
+            animation: matrixFlicker 0.1s infinite alternate;
+            font-family: monospace;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+
+        /* Hiệu ứng viền sáng nhẹ chạy ngang qua để nhận biết dải sóng */
+        .wave-scanning-edge {
+            border-color: #075e54 !important;
+            box-shadow: 0 0 12px rgba(13, 148, 136, 0.35) !important;
+            background-color: #f0fdfa !important;
+            transition: all 0.15s ease-in-out;
+        }
+
+        /* HỆ ICON SVG THỐNG NHẤT (Lucide, stroke 3 -> khớp nút mũi tên dịch chuyển).
+           - inline-flex + shrink-0: icon không bị co/kẹt trong flexbox.
+           - vertical-align: -0.15em: icon ngồi ngay hàng chữ baseline.
+           - inline SVG (không dùng web-font) -> luôn render được trong ảnh PNG xuất
+             bằng html-to-image (emoji font hệ thống sẽ BỊ MẤT khi xuất ảnh). */
+        .ic {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            vertical-align: -0.15em;
+            line-height: 0;
+        }
+
+        .ic svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Icon xoay cho trạng thái loading (quay vị trí / đang xuất ảnh) */
+        .ic-spin svg {
+            animation: icSpin 0.9s linear infinite;
+        }
+
+        @keyframes icSpin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-[#fcfbf7] text-stone-800 min-h-screen font-sans antialiased selection:bg-emerald-200">
+
+    <div class="flex flex-col md:flex-row h-screen w-full overflow-hidden">
+
+        <aside id="sidebarPanel"
+            class="w-full md:w-64 lg:w-72 xl:w-80 md:h-full bg-amber-50/40 border-b md:border-b-0 md:border-r-2 border-stone-800 flex flex-col p-5 shrink-0 z-20 overflow-y-auto overflow-x-hidden overscroll-contain transition-all duration-300 ease-in-out">
+            <div class="mb-5 pb-3 border-b-2 border-stone-800/20">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-2xl">📖</span>
+                    <h2 class="text-lg font-black tracking-tight text-stone-900 ">EduTool Smart</h2>
+                </div>
+                <p class="text-[10px] text-stone-500 uppercase font-bold tracking-wider mt-0.5 ml-11">phát triển bởi kỳ
+                    anh nhớ 🤟
+                </p>
+            </div>
+
+            <div class="space-y-3 mb-5 flex flex-col">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-stone-700">📋 Sĩ số hiện tại</h3>
+                    <span id="student-count"
+                        class="text-xs bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded font-mono font-bold">0
+                        HS</span>
+                </div>
+                <textarea id="txt-students" rows="4"
+                    class="w-full bg-white border-2 border-stone-800 rounded-xl p-3 text-xs focus:outline-none placeholder:text-stone-400 font-mono resize-none leading-relaxed text-stone-700 shadow-inner"
+                    placeholder="Nhập tên học sinh, mỗi dòng một tên..."></textarea>
+                <button id="btn-load-students"
+                    class="w-full text-xs bg-stone-800 hover:bg-stone-700 text-white font-bold py-2.5 rounded-xl border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none">
+                    🔄 ĐỒNG BỘ DANH SÁCH MỚI
+                </button>
+            </div>
+
+            <div class="flex-1 flex flex-col min-h-[200px] overflow-hidden">
+                <h3
+                    class="text-xs font-bold uppercase tracking-wider text-stone-700 mb-2 flex justify-between items-center">
+                    <span>⏳ HÀNG ĐỢI KÉO THẢ</span>
+                    <div class="flex gap-1">
+                        <button id="btn-shuffle-queue" title="Xáo trộn ngẫu nhiên hàng đợi"
+                            class="text-[10px] bg-white hover:bg-stone-100 text-stone-800 font-bold px-1.5 py-0.5 rounded border border-stone-800 shadow-[1px_1px_0px_0px_rgba(41,37,36,1)] transition active:translate-y-0.5 active:shadow-none cursor-pointer">
+                            🔀 Trộn
+                        </button>
+                        <button id="btn-reverse-queue" title="Đảo ngược thứ tự hàng đợi"
+                            class="text-[10px] bg-white hover:bg-stone-100 text-stone-800 font-bold px-1.5 py-0.5 rounded border border-stone-800 shadow-[1px_1px_0px_0px_rgba(41,37,36,1)] transition active:translate-y-0.5 active:shadow-none cursor-pointer">
+                            🔄 Đảo
+                        </button>
+                    </div>
+                </h3>
+
+                <div class="mb-2 relative">
+                    <input type="text" id="search-waiting"
+                        class="w-full bg-white border-2 border-stone-400 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-stone-800 placeholder:text-stone-400 font-sans shadow-sm"
+                        placeholder="🔍 Tìm nhanh học sinh trong hàng đợi...">
+                </div>
+
+                <div id="waiting-list"
+                    class="max-h-[320px] md:max-h-[calc(100vh-420px)] overflow-y-auto overscroll-contain bg-stone-100/60 border-2 border-stone-300 rounded-xl p-3 space-y-2 shadow-inner">
+                </div>
+            </div>
+
+            <div class="hidden md:block text-[10px] text-stone-400 font-medium mt-4 text-center leading-relaxed">
+                Mẹo: Giữ Ctrl + Click vào ô để Khóa bàn hỏng<br>
+            </div>
+        </aside>
+
+        <main id="main-content" class="relative flex-1 flex flex-col bg-amber-50/10 overflow-hidden">
+            <header
+                class="min-h-16 border-b border-stone-200 bg-white px-4 md:px-6 py-4 flex items-center justify-between shrink-0 gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <button type="button" id="btn-toggle-sidebar" onclick="toggleSidebar()"
+                        title="Thu gọn / Mở rộng thanh bên"
+                        class="hidden md:flex shrink-0 items-center justify-center w-8 h-8 rounded-lg border-2 border-stone-800 bg-white hover:bg-stone-100 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] active:translate-y-0.5 active:shadow-none transition cursor-pointer text-sm">
+                        ⟨⟨
+                    </button>
+                    <div class="flex flex-col min-w-0">
+                        <span class="text-[10px] text-stone-400 uppercase font-mono tracking-widest">Sơ đồ vị trí ngồi
+                            của lớp</span>
+                        <h1 class="text-base font-black text-stone-800 tracking-tight truncate">HỆ THỐNG SẮP XẾP CHỖ
+                            NGỒI THÔNG MINH</h1>
+                    </div>
+                </div>
+                <div id="lbl-total-seats-container"
+                    class="text-xs bg-stone-50 border border-stone-300 px-3 py-1.5 rounded-lg text-stone-600 font-medium shrink-0">
+                    Đã xếp: <span id="lbl-total-seats" class="font-mono text-emerald-700 font-bold">0</span><span
+                        class="font-mono text-stone-400"> / </span><span id="lbl-available-seats"
+                        class="font-mono text-stone-700 font-bold">0</span>
+                </div>
+            </header>
+
+            <div id="classroom-viewport"
+                class="flex-1 p-4 md:p-6 lg:p-8 overflow-auto overscroll-contain flex flex-col justify-start items-center w-full">
+
+                <div class="mt-5 relative w-full max-w-7xl group/gridnav">
+
+                    <button type="button" onclick="shiftClassroom('left')" title="Dịch chuyển Tổ sang trái"
+                        class="shift-arrow-btn opacity-0 group-hover/gridnav:opacity-100 focus-visible:opacity-100 absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[calc(50%+21px)] z-30 w-8 h-8 rounded-full bg-white border-2 border-stone-800 shadow-[2px_2px_0px_0px_#292524] flex items-center justify-center text-stone-700 hover:bg-emerald-50 hover:border-emerald-600 hover:text-emerald-700 hover:scale-110 cursor-pointer">
+                        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M15 6L9 12L15 18" />
+                        </svg>
+                    </button>
+
+                    <button type="button" onclick="shiftClassroom('right')" title="Dịch chuyển Tổ sang phải"
+                        class="shift-arrow-btn opacity-0 group-hover/gridnav:opacity-100 focus-visible:opacity-100 absolute right-0 top-1/2 -translate-y-1/2 translate-x-[calc(50%+21px)] z-30 w-8 h-8 rounded-full bg-white border-2 border-stone-800 shadow-[2px_2px_0px_0px_#292524] flex items-center justify-center text-stone-700 hover:bg-emerald-50 hover:border-emerald-600 hover:text-emerald-700 hover:scale-110 cursor-pointer">
+                        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 6L15 12L9 18" />
+                        </svg>
+                    </button>
+
+                    <button type="button" onclick="shiftClassroom('up')" title="Dịch chuyển Dãy Bàn lên trên"
+                        class="shift-arrow-btn opacity-0 group-hover/gridnav:opacity-100 focus-visible:opacity-100 absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[calc(50%+21px)] z-30 w-8 h-8 rounded-full bg-white border-2 border-stone-800 shadow-[2px_2px_0px_0px_#292524] flex items-center justify-center text-stone-700 hover:bg-emerald-50 hover:border-emerald-600 hover:text-emerald-700 hover:scale-110 cursor-pointer">
+                        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 15L12 9L18 15" />
+                        </svg>
+                    </button>
+
+                    <button type="button" onclick="shiftClassroom('down')" title="Dịch chuyển Dãy Bàn xuống dưới"
+                        class="shift-arrow-btn opacity-0 group-hover/gridnav:opacity-100 focus-visible:opacity-100 absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-[calc(50%+21px)] z-30 w-8 h-8 rounded-full bg-white border-2 border-stone-800 shadow-[2px_2px_0px_0px_#292524] flex items-center justify-center text-stone-700 hover:bg-emerald-50 hover:border-emerald-600 hover:text-emerald-700 hover:scale-110 cursor-pointer">
+                        <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 9L12 15L18 9" />
+                        </svg>
+                    </button>
+
+                    <div id="classroom-grid" class="w-full max-w-7xl grid gap-[clamp(10px,1.5vw,24px)] p-1"></div>
+                </div>
+
+                <div class="w-full max-w-7xl mt-12 mb-20 grid grid-cols-12 gap-4 shrink-0">
+                    <div
+                        class="col-span-8 bg-stone-800 text-amber-50 border-2 border-stone-950 font-bold py-3.5 text-center rounded-xl shadow-[4px_4px_0px_0px_rgba(120,113,108,0.3)] tracking-widest text-xs select-none uppercase font-serif">
+                        🌿 BẢNG ĐEN LỚP HỌC
+                    </div>
+                    <div
+                        class="col-span-4 bg-amber-100/80 border-2 border-dashed border-amber-800 text-amber-900 font-bold py-3.5 text-center rounded-xl text-xs select-none uppercase">
+                        👩‍🏫 BÀN GIÁO VIÊN
+                    </div>
+                </div>
+
+                <div class="fixed bottom-6 z-50 w-full px-6 flex justify-center pointer-events-none">
+                    <div
+                        class="bg-[#faf9f5] border-[3px] border-stone-900 rounded-2xl p-3 shadow-[2px_2px_0px_1px_#C0C0C0] flex flex-row flex-wrap sm:flex-nowrap items-center justify-center gap-2 pointer-events-auto w-max mx-auto">
+
+                        <button id="btn-reset"
+                            class="bg-red-600/70 hover:bg-red-500 text-white border-2 border-stone-900 text-xs font-bold py-2 px-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none whitespace-nowrap">
+                            🗑️ <span class="hidden sm:inline ml-1">Xóa</span>
+                        </button>
+
+                        <button id="btn-random-all"
+                            class="bg-white hover:bg-stone-50 text-stone-800 border-2 border-stone-800 text-xs font-bold py-2 px-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none whitespace-nowrap">
+                            🚀 <span class="hidden sm:inline ml-1">Tự Động</span>
+                        </button>
+
+                        <button id="btn-lucky-draw"
+                            class="bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-black py-2 px-4 sm:px-6 rounded-xl border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition tracking-wide cursor-pointer active:translate-y-0.5 active:shadow-none whitespace-nowrap">
+                            🎯 <span class="hidden sm:inline ml-1">QUAY VỊ TRÍ</span>
+                        </button>
+
+                        <button id="btn-settings"
+                            class="bg-white hover:bg-amber-50 text-stone-800 border-2 border-stone-800 text-xs font-bold py-2 px-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none whitespace-nowrap"
+                            title="Tùy chỉnh sơ đồ lớp (số hàng, số cột)">
+                            ⚙️ <span class="hidden sm:inline ml-1">Cài Đặt</span>
+                        </button>
+                        <button id="btn-export-png"
+                            class="bg-teal-700 hover:bg-teal-600 text-white font-bold text-xs py-2 px-3 rounded-xl border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none whitespace-nowrap">
+                            📸 <span class="hidden sm:inline ml-1">Lưu</span>
+                        </button>
+
+
+
+                    </div>
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+
+    <div id="custom-context-menu"
+        class=" absolute z-50 w-56 bg-[#faf9f5] border-[3px] border-stone-900 rounded-2xl overflow-hidden shadow-[6px_6px_0px_0px_#292524] font-mono">
+
+        <!-- Header -->
+        <div class="px-4 py-3 border-b-[3px] border-stone-900 bg-stone-100">
+
+            <div id="context-student-name" class="text-[13px] font-black text-stone-800">
+            </div>
+
+            <!-- <div id="context-seat" class="text-[10px] tracking-widest text-stone-500 mt-1">
+            </div> -->
+
+        </div>
+
+        <!-- Officer -->
+        <div class="p-2">
+
+            <button type="button" class="menu-item" data-role="" onclick="setStudentOfficer('')">
+                <span class="dot bg-stone-300"></span>
+                Thành viên
+            </button>
+
+            <button type="button" class="menu-item" data-role="Lớp trưởng" onclick="setStudentOfficer('Lớp trưởng')">
+                <span class="dot bg-blue-500"></span>
+                Lớp trưởng
+            </button>
+
+            <button type="button" class="menu-item" data-role="Lớp phó" onclick="setStudentOfficer('Lớp phó')">
+                <span class="dot bg-sky-500"></span>
+                Lớp phó
+            </button>
+
+            <button type="button" class="menu-item" data-role="Bí thư" onclick="setStudentOfficer('Bí thư')">
+                <span class="dot bg-rose-500"></span>
+                Bí thư
+            </button>
+
+            <button type="button" class="menu-item" data-role="Tổ trưởng" onclick="setStudentOfficer('Tổ trưởng')">
+                <span class="dot bg-emerald-500"></span>
+                Tổ trưởng
+            </button>
+
+            <button type="button" class="menu-item" data-role="Thư ký" onclick="setStudentOfficer('Thư ký')">
+                <span class="dot bg-purple-500"></span>
+                Thư ký
+            </button>
+
+        </div>
+
+        <div class="border-t-[3px] border-stone-900"></div>
+
+        <button type="button" id="context-delete-btn" class="delete-btn" onclick="kickStudentFromMenu()">
+            🗑 Xóa khỏi bàn
+        </button>
+
+    </div>
+
+    <!-- THẺ NỔI: CÀI ĐẶT TÙY CHỈNH SỐ HÀNG / SỐ TỔ (CỘT) SƠ ĐỒ LỚP -->
+    <div id="settings-modal-backdrop"
+        class="fixed inset-0 z-[70] bg-stone-900/50 backdrop-blur-[2px] opacity-0 pointer-events-none transition-opacity duration-200 flex items-center justify-center p-4">
+        <div id="settings-modal-card"
+            class="w-full max-w-sm bg-[#faf9f5] border-[3px] border-stone-900 rounded-2xl shadow-[6px_6px_0px_0px_#292524] font-mono scale-95 transition-transform duration-200 overflow-hidden">
+
+            <div class="flex items-center justify-between px-5 py-4 border-b-[3px] border-stone-900 bg-stone-100">
+                <h3 class="text-sm font-black text-stone-800 flex items-center gap-2">⚙️ Tùy chỉnh sơ đồ lớp</h3>
+                <button id="btn-close-settings" type="button"
+                    class="w-7 h-7 flex items-center justify-center rounded-full border-2 border-stone-800 bg-white hover:bg-rose-50 hover:border-rose-500 hover:text-rose-600 text-stone-700 text-xs font-black transition cursor-pointer">✕</button>
+            </div>
+
+            <div class="p-5 space-y-4">
+                <label
+                    class="flex items-center justify-between gap-3 cursor-pointer select-none bg-white border-2 border-stone-800 rounded-xl px-3 py-2.5 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)]">
+                    <span class="text-xs font-bold text-stone-700">Tự động tính số hàng theo sĩ số</span>
+                    <input type="checkbox" id="chk-auto-rows" class="w-4 h-4 accent-emerald-600 cursor-pointer">
+                </label>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-stone-500 uppercase tracking-wide mb-1">Số tổ
+                            (cột)</label>
+                        <input type="number" id="input-total-blocks" min="1" max="12"
+                            class="w-full border-2 border-stone-800 rounded-lg px-2 py-1.5 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-stone-500 uppercase tracking-wide mb-1">Số
+                            hàng</label>
+                        <input type="number" id="input-total-rows" min="1" max="30"
+                            class="w-full border-2 border-stone-800 rounded-lg px-2 py-1.5 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-stone-100 disabled:text-stone-400">
+                    </div>
+                </div>
+
+                <div
+                    class="bg-amber-50/60 border-2 border-dashed border-amber-400 rounded-xl px-3 py-2.5 text-[11px] leading-relaxed text-stone-600 space-y-1">
+                    <div class="flex justify-between font-bold"><span>Sĩ số cần xếp chỗ:</span><span
+                            id="lbl-required-seats" class="text-stone-800">0</span></div>
+                    <div class="flex justify-between font-bold"><span>Tổng số chỗ sau khi áp dụng:</span><span
+                            id="lbl-preview-seats" class="text-emerald-700">0</span></div>
+                </div>
+
+                <div id="settings-error"
+                    class="hidden text-[11px] font-bold text-rose-600 bg-rose-50 border-2 border-rose-300 rounded-xl px-3 py-2">
+                </div>
+            </div>
+
+            <div class="flex gap-2 px-5 pb-5">
+                <button id="btn-cancel-settings" type="button"
+                    class="flex-1 bg-white hover:bg-stone-50 text-stone-800 border-2 border-stone-800 text-xs font-bold py-2.5 rounded-xl shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none">Hủy</button>
+                <button id="btn-apply-settings" type="button"
+                    class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black py-2.5 rounded-xl border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none">✔
+                    Áp dụng</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-7xl mx-auto my-12 px-4 select-none">
+        <div
+            class="border-2 border-stone-800 bg-amber-50/40 p-4 rounded-xl mb-4 shadow-[4px_4px_0px_0px_rgba(41,37,36,1)] flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-xl">📸</span>
+                <h3 class="font-black text-stone-800 text-sm uppercase tracking-wide">Xem trước ảnh sơ đồ lớp khi xuất
+                    (Tỷ lệ cố định)</h3>
+            </div>
+            <p class="text-xs text-stone-500 italic">Khung này giữ kích thước cố định để ảnh xuất ra không bị lệch
+                layout.</p>
+        </div>
+
+        <div
+            class="w-full overflow-x-auto border-2 border-stone-800 rounded-2xl shadow-[8px_8px_0px_0px_rgba(41,37,36,1)] bg-[#fcfbf7]">
+            <!-- KHUNG ẢNH CỐ ĐỊNH TỶ LỆ 19:10 (1520 x 800) -->
+            <div id="classroom-clone-container"
+                style="width: 1520px; height: 800px; background-color: #fcfbf7; overflow: hidden;"
+                class="mx-auto flex items-center justify-center font-sans antialiased text-stone-800 box-border shrink-0">
+
+                <!-- NỘI DUNG: được co giãn + căn giữa để vừa vặn trong khung 19:10 -->
+                <div id="classroom-clone-content" style="width: 1520px; transform-origin: center center;"
+                    class="flex flex-col items-center justify-center gap-6 p-10 box-border">
+
+                    <div
+                        class="w-full bg-white px-6 py-4 flex items-center justify-between rounded-xl border-2 border-stone-800 shadow-[4px_4px_0px_0px_rgba(41,37,36,1)]">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] text-stone-400 uppercase font-mono tracking-widest">Sơ đồ vị trí
+                                ngồi của lớp</span>
+                            <h1 class="text-lg font-black text-stone-800 tracking-tight">HỆ THỐNG SẮP XẾP CHỖ NGỒI THÔNG
+                                MINH</h1>
+                        </div>
+                        <div
+                            class="text-xs bg-stone-50 border border-stone-300 px-3 py-1.5 rounded-lg text-stone-600 font-medium">
+                            Bản in sơ đồ chuẩn chỉnh
+                        </div>
+                    </div>
+
+                    <div id="classroom-clone-grid" class="w-full grid gap-6 p-1"></div>
+
+                    <div class="w-full grid grid-cols-12 gap-4">
+                        <div
+                            class="col-span-8 bg-stone-800 text-amber-50 border-2 border-stone-950 font-bold py-3.5 text-center rounded-xl shadow-[4px_4px_0px_0px_rgba(120,113,108,0.3)] tracking-widest text-xs uppercase font-serif">
+                            🌿 BẢNG ĐEN LỚP HỌC
+                        </div>
+                        <div
+                            class="col-span-4 bg-amber-100/80 border-2 border-dashed border-amber-800 text-amber-900 font-bold py-3.5 text-center rounded-xl text-xs uppercase">
+                            👩‍🏫 BÀN GIÁO VIÊN
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <script>
+        let originalStudentsList = [];
+        let waitingStudents = [];
+        let totalBlocks = 4;
+        let totalRows = 5;
+        let classroomData = {};
+        let officerData = {}; // Lưu trữ chức vụ: { "Hoàng Kỳ Anh": "Lớp trưởng" }
+        let isWaveAnimating = false;
+        let currentMenuTargetKey = null; // Lưu vị trí ô đang được chuột phải
+        // Tùy chỉnh sơ đồ: khi autoRows = true -> số hàng tự tính theo sĩ số (mặc định cũ).
+        // Khi false -> dùng totalRows do người dùng chọn trong modal cài đặt.
+        let autoRows = true;
+        let manualRows = 5; // giá trị số hàng khi người dùng tắt chế độ tự động
+
+        const classroomGrid = document.getElementById('classroom-grid');
+        const waitingListEl = document.getElementById('waiting-list');
+        const txtStudents = document.getElementById('txt-students');
+        const studentCountEl = document.getElementById('student-count');
+        const lblTotalSeats = document.getElementById('lbl-total-seats');
+        const contextMenu = document.getElementById('custom-context-menu');
+        const lblAvailableSeats = document.getElementById('lbl-available-seats');
+
+        // Tính số thứ tự bàn theo kiểu "rắn zigzac":
+        // - Bắt đầu từ bàn dưới cùng, ngoài cùng bên PHẢI = số 1
+        // - Đi ngược lên trên hết cột đó, rồi vòng sang cột liền kề bên trái
+        //   và đảo chiều (đi xuống), cứ thế nối tiếp như đường rắn cho tới bàn
+        //   trên cùng, ngoài cùng bên trái.
+        // Mỗi "tổ" (block) có 2 bàn xếp cạnh nhau (s=1 trái, s=2 phải trong tổ đó).
+        function getSeatSerialNumber(b, r, s) {
+            const totalCols = totalBlocks * 2;
+            // Vị trí cột tính từ trái sang phải và phải sang trái
+            const colIndex = (b - 1) * 2 + s;
+            const colFromRight = totalCols - colIndex + 1;
+            // Vị trí hàng tính từ DƯỚI lên TRÊN (1 là hàng dưới cùng, 2 là hàng trên nó...)
+            const rowFromBottom = totalRows - r + 1;
+            // Nếu là hàng số 1, 3, 5... (tính từ dưới lên): chạy từ PHẢI sang TRÁI
+            // Nếu là hàng số 2, 4, 6... (tính từ dưới lên): chạy từ TRÁI sang PHẢI
+            const posInRow = (rowFromBottom % 2 === 1) ? colFromRight : colIndex;
+            // Tính số serial
+            return (rowFromBottom - 1) * totalCols + posInRow;
+        }
+
+        // --- HỆ ICON SVG THỐNG NHẤT (Lucide, stroke-width 3) ---
+        // Tập trung toàn bộ path data ở đây -> đổi icon chỉ cần sửa 1 nơi.
+        // Dùng inline SVG (KHÔNG dùng web-font/emoji) vì emoji sẽ MẤT khi xuất ảnh PNG
+        // bằng html-to-image, còn SVG là DOM thật nên luôn bị chụp lại đầy đủ.
+        // Path data lấy từ lucide-static v0.487.0 (ISC license).
+        const ICON_PATHS = {
+            'book-open': '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+            'users': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+            'hourglass': '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
+            'refresh-cw': '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+            'shuffle': '<path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/>',
+            'arrow-left-right': '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
+            'search': '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+            'trash-2': '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
+            'layout-grid': '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
+            'target': '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+            'camera': '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+            'image': '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+            'crown': '<path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/>',
+            'shield': '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
+            'book-marked': '<path d="M10 2v8l3-3 3 3V2"/><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>',
+            'flag': '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>',
+            'pen-line': '<path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/>',
+            'graduation-cap': '<path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
+            'presentation': '<path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/>',
+            'dices': '<rect width="12" height="12" x="2" y="10" rx="2" ry="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/><path d="M15 6h.01"/><path d="M18 9h.01"/>',
+            'loader': '<path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/>',
+            'zap': '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+            'grip-vertical': '<circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/>',
+            'sparkles': '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>'
+        };
+
+        // Sinh chuỗi SVG inline cho icon. name: key trong ICON_PATHS.
+        // sizeClass: class Tailwind cho kích thước, vd "w-4 h-4" (mặc định w-4 h-4).
+        // spin: true -> icon xoay (cho trạng thái loading).
+        function iconSvg(name, sizeClass = 'w-4 h-4', spin = false) {
+            const inner = ICON_PATHS[name] || ICON_PATHS['loader'];
+            const spinCls = spin ? ' ic-spin' : '';
+            return `<span class="ic ${sizeClass}${spinCls}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">${inner}</svg></span>`;
+        }
+
+        // Bảng metadata chức vụ: icon + màu badge. Dùng chung cho cả UI tương tác
+        // và khung ảnh xuất (clone) -> luôn đồng bộ, sửa 1 nơi là đổi cả 2.
+        const OFFICER_META = {
+            "Lớp trưởng": { icon: 'crown', color: 'bg-amber-100 border-amber-400' },
+            "Lớp phó": { icon: 'shield', color: 'bg-sky-100 border-sky-400' },
+            "Bí thư": { icon: 'book-marked', color: 'bg-rose-100 border-rose-400' },
+            "Tổ trưởng": { icon: 'flag', color: 'bg-emerald-100 border-emerald-400' },
+            "Thư ký": { icon: 'pen-line', color: 'bg-purple-100 border-purple-400' }
+        };
+
+        // --- TÍNH NĂNG THU GỌN / MỞ RỘNG THANH BÊN (RESPONSIVE) ---
+        function toggleSidebar() {
+            const panel = document.getElementById('sidebarPanel');
+            const btn = document.getElementById('btn-toggle-sidebar');
+            if (!panel || !btn) return;
+
+            const isCollapsed = panel.dataset.collapsed === 'true';
+
+            if (isCollapsed) {
+                panel.style.width = '';
+                panel.style.minWidth = '';
+                panel.style.padding = '';
+                panel.style.opacity = '';
+                panel.style.borderRightWidth = '';
+                panel.style.pointerEvents = '';
+                panel.dataset.collapsed = 'false';
+                btn.innerText = '⟨⟨';
+                btn.title = 'Thu gọn thanh bên';
+            } else {
+                panel.style.width = '0px';
+                panel.style.minWidth = '0px';
+                panel.style.padding = '0px';
+                panel.style.opacity = '0';
+                panel.style.borderRightWidth = '0px';
+                panel.style.pointerEvents = 'none';
+                panel.dataset.collapsed = 'true';
+                btn.innerText = '⟩⟩';
+                btn.title = 'Mở rộng thanh bên';
+            }
+        }
+
+        // --- TÍNH NĂNG LƯU TRỮ DỮ LIỆU (LOCALSTORAGE) ---
+        function saveToLocalStorage() {
+            const dataToSave = {
+                classroomData: classroomData,
+                officerData: officerData,
+                studentList: txtStudents.value,
+                totalBlocks: totalBlocks,
+                autoRows: autoRows,
+                manualRows: manualRows
+            };
+            localStorage.setItem('retroClassData', JSON.stringify(dataToSave));
+        }
+
+        function loadFromLocalStorage() {
+            const savedData = localStorage.getItem('retroClassData');
+            if (savedData) {
+                const parsed = JSON.parse(savedData);
+                classroomData = parsed.classroomData || {};
+                officerData = parsed.officerData || {};
+                if (parsed.studentList) {
+                    txtStudents.value = parsed.studentList;
+                }
+                if (typeof parsed.totalBlocks === 'number') {
+                    totalBlocks = parsed.totalBlocks;
+                }
+                if (typeof parsed.autoRows === 'boolean') {
+                    autoRows = parsed.autoRows;
+                }
+                if (typeof parsed.manualRows === 'number') {
+                    manualRows = parsed.manualRows;
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!localStorage.getItem('retroClassData')) {
+                txtStudents.value = "Lê Trường An\nHoàng Kỳ Anh\nNguyễn Tuấn Anh\nLê Ngọc Anh\nĐinh Diệp Ánh\nÂu Mạnh Bách\nTrần Lương Bằng\nVũ Gia Bình\nThạch Bảo Châu\nTrần Đoàn Trí Đức\nNguyễn Tuấn Dũng\nTrần Quốc Dũng\nNguyễn Vũ Dũng\nĐinh Tiến Dũng\nDoãn Vũ Hoàng Dũng\nNguyễn Ngọc Giang\nPhạm Nguyễn Ngân Hà\nLê Thuý Hà\nNguyễn Trung Hải\nNguyễn Như Hải\nNguyễn Trọng Hiếu\nNguyễn Thu Hương\nNguyễn Danh Trí Huy\nPhạm Hồng Gia Khánh\nNguyễn Nam Khánh\nLý Công Hà Khoa\nHứa Kin\nTrần Trang Linh\nĐào Đại Quang Long\nNguyễn Huyền Mai\nNguyễn Đức Minh\nBạch Gia Minh\nNguyễn Trà My\nMai Nguyễn Khoa Nam\nNguyễn Hải Nam\nHoàng Hải Nam\nHồ Nguyễn Đức Nghĩa\nNguyễn Xuân Bảo Ngọc\nNguyễn Khánh Phương\nNguyễn Thị Hoài Phương\nNguyễn Hữu Phú\nTrần Hà Thanh\nNguyễn Quang Thiên\nVũ Quốc Tiến\nBùi Minh Tiến\nTrương Minh Tiến\nNguyễn Minh Trí\nNguyễn Việt Trung\nNguyễn Minh Tuệ";
+            }
+
+            loadFromLocalStorage();
+            initLoadAndSync(true);
+
+            // Đóng context menu khi click ra ngoài
+            document.addEventListener("click", (e) => { if (!contextMenu.contains(e.target)) { hideContextMenu(); } });
+
+            document.getElementById('btn-load-students').addEventListener('click', () => {
+                if (isWaveAnimating) return;
+                initLoadAndSync(true);
+            });
+
+            document.getElementById('btn-lucky-draw').addEventListener('click', () => {
+                if (isWaveAnimating) return;
+                startCyberLuckyDrawAnimation();
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.code === 'Space' || event.key === ' ') {
+                    event.preventDefault();
+
+                    startCyberLuckyDrawAnimation();
+                }
+            });
+            document.getElementById('btn-random-all').addEventListener('click', autoAssignAllClassroom);
+            document.getElementById('btn-export-png').addEventListener('click', exportToPngClassroom);
+
+            // --- Nút cài đặt: mở thẻ nổi tùy chỉnh số hàng / số tổ (cột) ---
+            document.getElementById('btn-settings').addEventListener('click', () => {
+                if (isWaveAnimating) return;
+                openSettingsModal();
+            });
+            document.getElementById('btn-close-settings').addEventListener('click', closeSettingsModal);
+            document.getElementById('btn-cancel-settings').addEventListener('click', closeSettingsModal);
+            document.getElementById('btn-apply-settings').addEventListener('click', applySettingsChange);
+            document.getElementById('settings-modal-backdrop').addEventListener('click', (e) => {
+                if (e.target.id === 'settings-modal-backdrop') closeSettingsModal();
+            });
+            document.getElementById('chk-auto-rows').addEventListener('change', (e) => {
+                document.getElementById('input-total-rows').disabled = e.target.checked;
+                updateSettingsPreview();
+            });
+            document.getElementById('input-total-blocks').addEventListener('input', updateSettingsPreview);
+            document.getElementById('input-total-rows').addEventListener('input', updateSettingsPreview);
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeSettingsModal();
+            });
+
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                if (isWaveAnimating) return;
+                if (confirm("🚨 Bạn có chắc chắn muốn RESET vị trí chỗ ngồi không?\n(Bàn đã khóa và chức vụ học sinh sẽ được GIỮ NGUYÊN)")) {
+                    // Chỉ xóa các ô đang có học sinh ngồi, giữ nguyên ô bị khóa (DISABLED) và officerData
+                    Object.keys(classroomData).forEach(key => {
+                        if (classroomData[key] !== 'DISABLED') {
+                            delete classroomData[key];
+                        }
+                    });
+                    initLoadAndSync(true);
+                }
+            });
+
+            document.getElementById('btn-shuffle-queue').addEventListener('click', () => {
+                if (isWaveAnimating) return;
+                shuffleWaitingList();
+            });
+
+            document.getElementById('btn-reverse-queue').addEventListener('click', () => {
+                if (isWaveAnimating) return;
+                reverseWaitingList();
+            });
+
+            waitingListEl.addEventListener('dragover', (e) => e.preventDefault());
+            waitingListEl.addEventListener('drop', (e) => {
+                e.preventDefault();
+                if (isWaveAnimating) return;
+                const rawData = e.dataTransfer.getData('text/plain');
+                if (!rawData) return;
+                const dragData = JSON.parse(rawData);
+
+                if (dragData.type === 'FROM_GRID') {
+                    const studentName = classroomData[dragData.key];
+                    if (studentName && studentName !== 'DISABLED') {
+                        delete classroomData[dragData.key];
+                        returnWaitingStudentInOriginalOrder(studentName);
+                    }
+                }
+            });
+        });
+
+        // --- LOGIC CONTEXT MENU ---
+        // Lấy tên học sinh từ target đang mở menu: có thể là 1 ô bàn (vd "b1-r1-s1")
+        // hoặc 1 học sinh trong hàng đợi (dạng "waiting:Tên Học Sinh")
+        function getStudentNameFromMenuTarget(key) {
+            if (!key) return null;
+            if (key.startsWith('waiting:')) return key.slice(8);
+            return classroomData[key];
+        }
+
+        function setStudentOfficer(role) {
+            if (!currentMenuTargetKey) return;
+            const studentName = getStudentNameFromMenuTarget(currentMenuTargetKey);
+            if (studentName && studentName !== 'DISABLED') {
+                if (role === '') {
+                    delete officerData[studentName];
+                } else {
+                    officerData[studentName] = role;
+                }
+                initLoadAndSync(false);
+            }
+            hideContextMenu();
+        }
+
+        function kickStudentFromMenu() {
+            if (!currentMenuTargetKey) return;
+            if (currentMenuTargetKey.startsWith('waiting:')) { hideContextMenu(); return; }
+            releaseSeatToWaitingOriginal(currentMenuTargetKey);
+            hideContextMenu();
+        }
+
+        function getOfficerBadge(studentName) {
+            const role = officerData[studentName];
+            if (!role) return "";
+            const badges = {
+                "Lớp trưởng": {
+                    icon: "👑",
+                    color: "bg-amber-100 border-amber-400"
+                },
+                "Lớp phó": {
+                    icon: "🎖️",
+                    color: "bg-sky-100 border-sky-400"
+                },
+                "Bí thư": {
+                    icon: "📌",
+                    color: "bg-rose-100 border-rose-400"
+                },
+                "Tổ trưởng": {
+                    icon: "⭐",
+                    color: "bg-emerald-100 border-emerald-400"
+                },
+                "Thư ký": {
+                    icon: "📝",
+                    color: "bg-purple-100 border-purple-400"
+                }
+            };
+            const b = badges[role];
+
+            return ` <div class=" absolute top-1 right-1 w-5 h-5 rounded-full border ${b.color} flex items-center justify-center text-[11px] shadow-sm select-none transition duration-150 group-hover:scale-110"> ${b.icon} </div>`;
+
+        }
+
+        function shuffleWaitingList() {
+            if (waitingStudents.length <= 1) return;
+            for (let i = waitingStudents.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [waitingStudents[i], waitingStudents[j]] = [waitingStudents[j], waitingStudents[i]];
+            }
+            renderWaitingListUI();
+            saveToLocalStorage();
+        }
+
+        function reverseWaitingList() {
+            if (waitingStudents.length <= 1) return;
+            waitingStudents.reverse();
+            renderWaitingListUI();
+            saveToLocalStorage();
+        }
+
+        function playDropSettle(cellKey) {
+            requestAnimationFrame(() => {
+                const el = document.getElementById(`cell-${cellKey}`);
+                if (!el) return;
+                el.classList.remove('drop-settle');
+                void el.offsetWidth;
+                el.classList.add('drop-settle');
+                el.addEventListener('animationend', () => el.classList.remove('drop-settle'), { once: true });
+            });
+        }
+
+        function initLoadAndSync(forceAutoCalculateRows = true) {
+            const toTitleCase = (str) => {
+                if (!str) return '';
+                return str.toLowerCase().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+            };
+
+            const currentLines = txtStudents.value.split('\n')
+                .map(name => toTitleCase(name.trim()))
+                .filter(name => name.length > 0);
+
+            if (forceAutoCalculateRows) {
+                Object.keys(classroomData).forEach(key => {
+                    const status = classroomData[key];
+                    if (status && status !== 'DISABLED' && !currentLines.includes(status)) {
+                        delete classroomData[key];
+                    }
+                });
+
+                originalStudentsList = [...currentLines];
+                waitingStudents = currentLines.filter(name => !Object.values(classroomData).includes(name));
+            } else {
+                waitingStudents = waitingStudents.filter(s => currentLines.includes(s));
+                currentLines.forEach(s => {
+                    if (!waitingStudents.includes(s) && !Object.values(classroomData).includes(s)) {
+                        waitingStudents.push(s);
+                    }
+                });
+            }
+
+            let disabledSeatsCount = 0;
+            Object.keys(classroomData).forEach(k => {
+                if (classroomData[k] === 'DISABLED') disabledSeatsCount++;
+            });
+
+            const totalStudentsCount = waitingStudents.length + (Object.values(classroomData).filter(v => v && v !== 'DISABLED').length);
+            const seatsPerRow = totalBlocks * 2;
+
+            let minRowsRequired = Math.ceil((totalStudentsCount + disabledSeatsCount) / seatsPerRow);
+            minRowsRequired = Math.max(minRowsRequired, 4);
+
+            // autoRows = true  -> số hàng tự tính theo sĩ số (hành vi cũ).
+            // autoRows = false -> dùng số hàng người dùng chọn thủ công trong cài đặt.
+            totalRows = autoRows ? minRowsRequired : manualRows;
+
+            const seatedStudentsCount = Object.values(classroomData).filter(v => v && v !== 'DISABLED').length;
+            const totalSeatsCount = totalRows * totalBlocks * 2;
+            lblTotalSeats.innerText = seatedStudentsCount;
+            lblAvailableSeats.innerText = totalSeatsCount - disabledSeatsCount;
+            studentCountEl.innerText = `${waitingStudents.length} HS`;
+
+            renderWaitingListUI();
+            renderClassroomGridUI();
+            saveToLocalStorage();
+        }
+
+        // --- MODAL CÀI ĐẶT: TÙY CHỈNH THỦ CÔNG SỐ HÀNG / SỐ TỔ (CỘT) ---
+        // Tổng số chỗ ngồi cần thiết = số HS đang chờ + số HS đang ngồi trong lớp
+        // + số ghế đã bị khóa (DISABLED), để khi người dùng chỉnh tay không làm
+        // "mất" chỗ của học sinh đang có hoặc ghế đang bị khóa.
+        function getRequiredSeatsCount() {
+            const seatedCount = Object.values(classroomData).filter(v => v && v !== 'DISABLED').length;
+            const disabledCount = Object.values(classroomData).filter(v => v === 'DISABLED').length;
+            return waitingStudents.length + seatedCount + disabledCount;
+        }
+
+        function updateSettingsPreview() {
+            const blocksInput = document.getElementById('input-total-blocks');
+            const rowsInput = document.getElementById('input-total-rows');
+            const blocks = Math.max(1, parseInt(blocksInput.value) || 1);
+            const rows = Math.max(1, parseInt(rowsInput.value) || 1);
+            const required = getRequiredSeatsCount();
+            const autoChecked = document.getElementById('chk-auto-rows').checked;
+            const previewTotal = blocks * rows * 2;
+
+            document.getElementById('lbl-required-seats').innerText = `${required} chỗ`;
+            const lblPreview = document.getElementById('lbl-preview-seats');
+            lblPreview.innerText = `${previewTotal} chỗ`;
+            lblPreview.className = (!autoChecked && previewTotal < required) ? "text-rose-600" : "text-emerald-700";
+
+            const errorBox = document.getElementById('settings-error');
+            if (!autoChecked && previewTotal < required) {
+                errorBox.classList.remove('hidden');
+                errorBox.innerText = `⚠️ Không đủ chỗ! Cần tối thiểu ${required} chỗ, hiện chỉ có ${previewTotal} chỗ. Hãy tăng số tổ hoặc số hàng.`;
+            } else {
+                errorBox.classList.add('hidden');
+            }
+        }
+
+        function openSettingsModal() {
+            document.getElementById('input-total-blocks').value = totalBlocks;
+            document.getElementById('input-total-rows').value = autoRows ? totalRows : manualRows;
+            document.getElementById('chk-auto-rows').checked = autoRows;
+            document.getElementById('input-total-rows').disabled = autoRows;
+            updateSettingsPreview();
+
+            const backdrop = document.getElementById('settings-modal-backdrop');
+            const card = document.getElementById('settings-modal-card');
+            backdrop.classList.remove('pointer-events-none', 'opacity-0');
+            backdrop.classList.add('opacity-100');
+            requestAnimationFrame(() => card.classList.remove('scale-95'));
+        }
+
+        function closeSettingsModal() {
+            const backdrop = document.getElementById('settings-modal-backdrop');
+            const card = document.getElementById('settings-modal-card');
+            backdrop.classList.add('opacity-0', 'pointer-events-none');
+            backdrop.classList.remove('opacity-100');
+            card.classList.add('scale-95');
+        }
+
+        function applySettingsChange() {
+            const blocksInput = document.getElementById('input-total-blocks');
+            const rowsInput = document.getElementById('input-total-rows');
+            const autoChecked = document.getElementById('chk-auto-rows').checked;
+
+            const newBlocks = Math.max(1, parseInt(blocksInput.value) || 1);
+            const newRows = Math.max(1, parseInt(rowsInput.value) || 1);
+            const required = getRequiredSeatsCount();
+
+            // Chế độ thủ công: bắt buộc tổng số chỗ (tổ x hàng x 2) phải đủ cho sĩ số hiện tại
+            if (!autoChecked) {
+                const totalSeats = newBlocks * newRows * 2;
+                if (totalSeats < required) {
+                    const errorBox = document.getElementById('settings-error');
+                    errorBox.classList.remove('hidden');
+                    errorBox.innerText = `⚠️ Không đủ chỗ! Cần tối thiểu ${required} chỗ, bạn mới chọn ${totalSeats} chỗ. Hãy tăng số tổ hoặc số hàng rồi thử lại.`;
+                    return;
+                }
+            }
+
+            // Dọn dẹp các ô nằm ngoài phạm vi lưới mới (khi thu nhỏ số tổ/số hàng):
+            // học sinh đang ngồi ở ô bị "cắt" sẽ được trả về hàng chờ đúng vị trí đầu hàng,
+            // ô đã khóa (DISABLED) nằm ngoài phạm vi sẽ bị bỏ luôn (không còn tồn tại nữa).
+            Object.keys(classroomData).forEach(key => {
+                const m = key.match(/^b(\d+)-r(\d+)-s(\d+)$/);
+                if (!m) return;
+                const b = parseInt(m[1], 10);
+                const r = parseInt(m[2], 10);
+                const outOfBlocks = b > newBlocks;
+                const outOfRows = (!autoChecked && r > newRows);
+                if (outOfBlocks || outOfRows) {
+                    const status = classroomData[key];
+                    delete classroomData[key];
+                    if (status && status !== 'DISABLED' && !waitingStudents.includes(status)) {
+                        waitingStudents.unshift(status);
+                    }
+                }
+            });
+
+            totalBlocks = newBlocks;
+            autoRows = autoChecked;
+            if (!autoChecked) manualRows = newRows;
+
+            initLoadAndSync(false);
+            closeSettingsModal();
+        }
+
+        // --- DỊCH CHUYỂN TỔ / DÃY BÀN ---
+        // direction: 'up'/'down'    -> dịch theo CỘT: mỗi cột là 1 cặp (Tổ b, ghế s) chạy dọc
+        //                              theo các hàng r. Gặp ô đã khóa (DISABLED) sẽ NHẢY QUA,
+        //                              học sinh luôn đáp xuống ô trống kế tiếp còn dùng được
+        //                              trong cùng cột đó (vòng lặp quanh 2 đầu cột).
+        //            'left'/'right' -> dịch theo HÀNG: mỗi lần dịch di chuyển NGUYÊN CẢ BÀN
+        //                              (gồm 2 ghế s1+s2 của cùng 1 hàng r) sang Tổ kế bên,
+        //                              KHÔNG tách rời 2 học sinh cùng bàn sang ghế khác nhau.
+        //                              Nếu bàn đích có ghế bị khóa, cả bàn đó bị bỏ qua và
+        //                              nhảy tới Tổ có bàn còn trống/dùng được kế tiếp.
+        // Bàn đã khóa (DISABLED) là hỏng vật lý nên KHÔNG di chuyển theo, luôn giữ nguyên vị trí,
+        // và không bao giờ nhận học sinh -> không còn tình trạng học sinh bị văng ra hàng chờ.
+        function shiftClassroom(direction) {
+            if (isWaveAnimating) return;
+
+            const oldData = { ...classroomData };
+            const newData = {};
+
+            // Các ô đã khóa luôn giữ nguyên vị trí
+            Object.keys(oldData).forEach(key => {
+                if (oldData[key] === 'DISABLED') newData[key] = 'DISABLED';
+            });
+
+            const isVertical = (direction === 'up' || direction === 'down');
+            const isForward = (direction === 'down' || direction === 'right');
+
+            if (isVertical) {
+                // Dịch theo cột: duyệt từng cột (Tổ b, ghế s), bỏ qua các ô đã khóa
+                for (let b = 1; b <= totalBlocks; b++) {
+                    for (let s = 1; s <= 2; s++) {
+                        const usableRows = [];
+                        for (let r = 1; r <= totalRows; r++) {
+                            const key = `b${b}-r${r}-s${s}`;
+                            if (oldData[key] !== 'DISABLED') usableRows.push(r);
+                        }
+                        const len = usableRows.length;
+                        if (len === 0) continue;
+
+                        for (let i = 0; i < len; i++) {
+                            const srcR = usableRows[i];
+                            const student = oldData[`b${b}-r${srcR}-s${s}`];
+                            if (!student) continue; // ô trống thì không có gì để dịch
+
+                            const targetIdx = isForward ? (i + 1) % len : (i - 1 + len) % len;
+                            const targetR = usableRows[targetIdx];
+                            newData[`b${b}-r${targetR}-s${s}`] = student;
+                        }
+                    }
+                }
+            } else {
+                // Dịch theo hàng: duyệt từng hàng r, di chuyển nguyên cả bàn (s1+s2) giữa các Tổ
+                for (let r = 1; r <= totalRows; r++) {
+                    const usableBlocks = [];
+                    for (let b = 1; b <= totalBlocks; b++) {
+                        const key1 = `b${b}-r${r}-s1`;
+                        const key2 = `b${b}-r${r}-s2`;
+                        // Bàn chỉ được xem là "dùng được" khi CẢ 2 ghế đều không bị khóa
+                        if (oldData[key1] !== 'DISABLED' && oldData[key2] !== 'DISABLED') {
+                            usableBlocks.push(b);
+                        }
+                    }
+                    const len = usableBlocks.length;
+                    if (len === 0) continue;
+
+                    for (let i = 0; i < len; i++) {
+                        const srcB = usableBlocks[i];
+                        const student1 = oldData[`b${srcB}-r${r}-s1`];
+                        const student2 = oldData[`b${srcB}-r${r}-s2`];
+                        if (!student1 && !student2) continue; // cả bàn trống thì không có gì để dịch
+
+                        const targetIdx = isForward ? (i + 1) % len : (i - 1 + len) % len;
+                        const targetB = usableBlocks[targetIdx];
+                        if (student1) newData[`b${targetB}-r${r}-s1`] = student1;
+                        if (student2) newData[`b${targetB}-r${r}-s2`] = student2;
+                    }
+                }
+            }
+
+            classroomData = newData;
+            initLoadAndSync(false);
+
+            requestAnimationFrame(() => {
+                Object.keys(classroomData).forEach(key => {
+                    if (classroomData[key] && classroomData[key] !== 'DISABLED') {
+                        const el = document.getElementById(`cell-${key}`);
+                        if (el) el.classList.add('cell-shift-pulse');
+                    }
+                });
+            });
+        }
+
+        function returnWaitingStudentInOriginalOrder(studentName) {
+            if (!waitingStudents.includes(studentName)) {
+                waitingStudents.unshift(studentName);
+                initLoadAndSync(false);
+            }
+        }
+        function showContextMenu(e, cellKey) {
+            if (isWaveAnimating) return;
+            e.preventDefault();
+            currentMenuTargetKey = cellKey;
+            const student = getStudentNameFromMenuTarget(cellKey);
+            document.getElementById("context-student-name").textContent = student;
+            const currentRole = officerData[student] || "";
+
+            // Nút "Xóa khỏi bàn" chỉ có ý nghĩa với học sinh đang ngồi ở 1 ô bàn cụ thể
+            const deleteBtn = document.getElementById('context-delete-btn');
+            if (deleteBtn) deleteBtn.classList.toggle('hidden', cellKey.startsWith('waiting:'));
+
+            document.querySelectorAll("#custom-context-menu .menu-item").forEach(btn => {
+                btn.classList.remove(
+                    "bg-blue-50",
+                    "bg-sky-50",
+                    "bg-rose-50",
+                    "bg-teal-50",
+                    "bg-purple-50",
+                    "ring-2",
+                    "ring-stone-800"
+                );
+
+            });
+            const roleColorMap = {
+                "Lớp trưởng": "bg-blue-50",
+                "Lớp phó": "bg-sky-50",
+                "Bí thư": "bg-rose-50",
+                "Tổ trưởng": "bg-teal-50",
+                "Thư ký": "bg-purple-50"
+            };
+
+            const activeItem = document.querySelector(`#custom-context-menu .menu-item[data-role="${currentRole}"]`);
+            if (activeItem) {
+                activeItem.classList.add("ring-2", "ring-stone-800");
+                if (roleColorMap[currentRole]) {
+                    activeItem.classList.add(roleColorMap[currentRole]);
+                }
+
+            }
+            // Đặt tạm vị trí để đo kích thước thật của menu (menu vẫn đang opacity 0 nên đo được mà không nháy hình)
+            contextMenu.style.left = e.pageX + "px";
+            contextMenu.style.top = e.pageY + "px";
+
+            const menuW = contextMenu.offsetWidth;
+            const menuH = contextMenu.offsetHeight;
+            const margin = 10;
+
+            // Giới hạn vị trí trong phạm vi màn hình nhìn thấy (có tính đến cuộn trang)
+            const maxLeft = window.scrollX + window.innerWidth - menuW - margin;
+            const maxTop = window.scrollY + window.innerHeight - menuH - margin;
+
+            let finalLeft = e.pageX;
+            let finalTop = e.pageY;
+
+            if (finalLeft > maxLeft) finalLeft = Math.max(window.scrollX + margin, maxLeft);
+            if (finalTop > maxTop) finalTop = Math.max(window.scrollY + margin, maxTop);
+
+            contextMenu.style.left = finalLeft + "px";
+            contextMenu.style.top = finalTop + "px";
+
+            // Trạng thái ban đầu
+            contextMenu.classList.remove("opacity-100", "scale-100");
+            contextMenu.classList.add("opacity-0", "scale-95");
+            contextMenu.classList.remove("pointer-events-none");
+
+            // Ép browser reflow
+            contextMenu.offsetHeight;
+
+            // Frame tiếp theo mới animate
+            requestAnimationFrame(() => {
+                contextMenu.classList.remove("opacity-0", "scale-95");
+                contextMenu.classList.add("opacity-100", "scale-100");
+            });
+        }
+        function hideContextMenu() {
+
+            contextMenu.classList.remove(
+                "opacity-100",
+                "scale-100"
+            );
+
+            contextMenu.classList.add(
+                "opacity-0",
+                "scale-95",
+                "pointer-events-none"
+            );
+
+        }
+
+        function renderClassroomGridUI() {
+            classroomGrid.innerHTML = '';
+            classroomGrid.style.gridTemplateColumns = `repeat(${totalBlocks}, minmax(130px, 1fr))`;
+
+            for (let b = 1; b <= totalBlocks; b++) {
+                const blockEl = document.createElement('div');
+                blockEl.className = "space-y-[clamp(8px,1.5vw,16px)] bg-white p-[clamp(10px,1.5vw,16px)] rounded-xl border-2 border-stone-800 shadow-[4px_4px_0px_0px_rgba(41,37,36,1)]";
+
+                const title = document.createElement('div');
+                title.className = "text-center text-[11px] font-black uppercase tracking-wider text-stone-500 mb-2 select-none border-b border-stone-100 pb-1";
+                title.innerText = `Dãy Tổ Số ${b}`;
+                blockEl.appendChild(title);
+
+                for (let r = 1; r <= totalRows; r++) {
+                    const rowEl = document.createElement('div');
+                    rowEl.className = "grid grid-cols-2 gap-[clamp(6px,1vw,12px)]";
+
+                    for (let s = 1; s <= 2; s++) {
+                        const cellKey = `b${b}-r${r}-s${s}`;
+                        const status = classroomData[cellKey];
+
+                        const seatEl = document.createElement('div');
+                        seatEl.id = `cell-${cellKey}`;
+                        seatEl.dataset.key = cellKey;
+                        seatEl.className = "classroom-cell rounded-lg border-2 p-2 flex flex-col justify-between relative select-none cursor-pointer group text-left";
+
+                        if (status === 'DISABLED') {
+                            seatEl.className += " relative bg-rose-50/60 bg-[linear-gradient(45deg,#ffe4e6_25%,transparent_25%,transparent_50%,#ffe4e6_50%,#ffe4e6_75%,transparent_75%,transparent)] bg-[size:12px_12px] border-2 border-dashed border-rose-900/20 text-rose-900/40 shadow-inner scale-[0.98] transition-all select-none";
+                            seatEl.innerHTML = `
+                        <div class="text-[9px] font-mono tracking-widest font-bold opacity-60">Chỗ ${getSeatSerialNumber(b, r, s)}</div>
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span class="font-sans italic text-rose-900/60 text-[11px] font-extrabold tracking-widest uppercase text-center whitespace-nowrap drop-shadow-sm">
+                                Bàn Khóa
+                            </span>
+                        </div>
+                    `;
+                        } else {
+                            seatEl.draggable = (status && !isWaveAnimating) ? true : false;
+                            if (status) {
+                                seatEl.className += " bg-amber-50/20 border-stone-800 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] text-stone-800 hover:bg-amber-50/60";
+                                seatEl.innerHTML = `
+                            <div class="text-[9px] font-mono font-bold text-stone-400 flex justify-between items-center w-full">
+                                <span>Chỗ ${getSeatSerialNumber(b, r, s)}</span>
+                                <span class="text-stone-400 hover:text-red-600 font-black text-sm px-1 cursor-pointer transition-colors ${isWaveAnimating ? 'hidden' : ''}" onclick="event.stopPropagation(); releaseSeatToWaitingOriginal('${cellKey}')">×</span>
+                            </div>
+                            <div class="text-xs font-black text-center truncate px-0.5 text-emerald-800 font-mono tracking-wide mb-1 w-full flex flex-col items-center justify-center" title="${status}">
+                                ${getOfficerBadge(status)}
+                                <div class="truncate max-w-full">${getShortName(status, originalStudentsList)}</div>
+                            </div>
+                        `;
+
+                                // Sự kiện Chuột Phải để mở Context Menu
+                                seatEl.addEventListener('contextmenu', (e) => {
+                                    e.preventDefault();
+                                    if (isWaveAnimating) return;
+                                    showContextMenu(e, cellKey);
+                                });
+
+                            } else {
+                                seatEl.className += " bg-stone-50/50 border-stone-300 border-dashed hover:border-stone-500 text-stone-400 shadow-none";
+                                seatEl.innerHTML = `
+                            <div class="text-[9px] font-mono font-medium text-stone-400">Chỗ ${getSeatSerialNumber(b, r, s)}</div>
+                            <div class="text-[11px] font-bold italic text-center text-stone-300 uppercase tracking-wider mb-1">Trống</div>
+                        `;
+                            }
+                        }
+
+                        seatEl.addEventListener('click', (e) => {
+                            if (isWaveAnimating) return;
+                            if (e.ctrlKey) {
+                                e.preventDefault();
+                                toggleDisableSeatState(cellKey);
+                            }
+                        });
+
+                        seatEl.addEventListener('dragstart', (e) => {
+                            if (isWaveAnimating) { e.preventDefault(); return; }
+                            if (classroomData[cellKey] && classroomData[cellKey] !== 'DISABLED') {
+                                e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'FROM_GRID', key: cellKey }));
+                                seatEl.classList.add('dragging');
+                            }
+                        });
+
+                        seatEl.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                            if (isWaveAnimating) return;
+                            if (classroomData[cellKey] !== 'DISABLED' && !seatEl.classList.contains('drag-hover')) {
+                                seatEl.classList.add('drag-hover');
+                            }
+                        });
+
+                        seatEl.addEventListener('dragleave', () => seatEl.classList.remove('drag-hover'));
+
+                        seatEl.addEventListener('drop', (e) => {
+                            e.preventDefault();
+                            if (isWaveAnimating) return;
+                            seatEl.classList.remove('drag-hover');
+                            if (classroomData[cellKey] === 'DISABLED') return;
+
+                            const rawData = e.dataTransfer.getData('text/plain');
+                            if (!rawData) return;
+                            const dragData = JSON.parse(rawData);
+
+                            if (dragData.type === 'FROM_WAITING') {
+                                const studentName = dragData.name;
+                                if (classroomData[cellKey]) {
+                                    returnWaitingStudentInOriginalOrder(classroomData[cellKey]);
+                                }
+                                classroomData[cellKey] = studentName;
+                                waitingStudents = waitingStudents.filter(s => s !== studentName);
+                            }
+                            else if (dragData.type === 'FROM_GRID') {
+                                const sourceKey = dragData.key;
+                                const sourceValue = classroomData[sourceKey];
+                                classroomData[sourceKey] = classroomData[cellKey];
+                                classroomData[cellKey] = sourceValue;
+                            }
+
+                            initLoadAndSync(false);
+                            playDropSettle(cellKey);
+                        });
+
+                        seatEl.addEventListener('dragend', () => seatEl.classList.remove('dragging'));
+                        rowEl.appendChild(seatEl);
+                    }
+                    blockEl.appendChild(rowEl);
+                }
+                classroomGrid.appendChild(blockEl);
+            }
+            if (typeof updateClassroomCloneView === 'function') {
+                updateClassroomCloneView();
+            }
+        }
+
+        function getShortName(fullName, allStudentsList) {
+            if (!fullName) return '';
+            const words = fullName.trim().split(/\s+/);
+            if (words.length <= 2) return fullName;
+
+            const defaultShort = words.slice(-2).join(' ');
+            const duplicateCount = allStudentsList.filter(name => {
+                const w = name.trim().split(/\s+/);
+                if (w.length <= 2) return name === fullName;
+                return w.slice(-2).join(' ') === defaultShort;
+            }).length;
+
+            if (duplicateCount > 1) {
+                return `${words[0]} ${words[words.length - 1]}`;
+            }
+            return defaultShort;
+        }
+
+        function toggleDisableSeatState(key) {
+            if (classroomData[key] === 'DISABLED') {
+                delete classroomData[key];
+            } else {
+                if (classroomData[key]) {
+                    returnWaitingStudentInOriginalOrder(classroomData[key]);
+                }
+                classroomData[key] = 'DISABLED';
+            }
+            initLoadAndSync(false);
+        }
+
+        function releaseSeatToWaitingOriginal(key) {
+            if (classroomData[key] && classroomData[key] !== 'DISABLED') {
+                const name = classroomData[key];
+                delete classroomData[key];
+                returnWaitingStudentInOriginalOrder(name);
+            }
+        }
+
+        function startCyberLuckyDrawAnimation() {
+            if (waitingStudents.length === 0) {
+                alert("Hàng đợi trống rỗng! Đã xếp hết toàn bộ danh sách lớp học.");
+                return;
+            }
+
+            const activeEmptyKeys = [];
+            for (let b = 1; b <= totalBlocks; b++) {
+                for (let r = 1; r <= totalRows; r++) {
+                    for (let s = 1; s <= 2; s++) {
+                        const key = `b${b}-r${r}-s${s}`;
+                        if (!classroomData[key]) {
+                            activeEmptyKeys.push(key);
+                        }
+                    }
+                }
+            }
+
+            if (activeEmptyKeys.length === 0) {
+                alert("Lớp học không còn ô ghế trống nào khả dụng!");
+                return;
+            }
+
+            const currentTargetStudent = waitingStudents[0];
+            const mainDrawBtn = document.getElementById('btn-lucky-draw');
+
+            mainDrawBtn.disabled = true;
+            mainDrawBtn.innerText = `⏳ ĐANG QUAY...`;
+
+            runPremiumNeonScanProcess(currentTargetStudent, activeEmptyKeys, mainDrawBtn);
+        }
+
+        function scrollElementIntoContainer(el, container) {
+            if (!el || !container) return;
+            const elRect = el.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            const offset = (elRect.top + elRect.height / 2) - (containerRect.top + containerRect.height / 2);
+            container.scrollBy({ top: offset, behavior: 'smooth' });
+        }
+
+        function runPremiumNeonScanProcess(studentName, emptyKeys, actionButton) {
+            const totalDuration = Math.floor(Math.random() * (6000 - 3500 + 1)) + 3500;
+            const startTime = performance.now();
+
+            let pointer = document.getElementById('neon-shuttle-pointer');
+            if (!pointer) {
+                pointer = document.createElement('div');
+                pointer.id = 'neon-shuttle-pointer';
+                document.body.appendChild(pointer);
+            }
+            pointer.style.display = 'block';
+
+            const finalChosenKey = emptyKeys[Math.floor(Math.random() * emptyKeys.length)];
+            let fakeKeys = emptyKeys.filter(k => k !== finalChosenKey);
+            let fakeChosenKey = fakeKeys.length > 0 ? fakeKeys[Math.floor(Math.random() * fakeKeys.length)] : finalChosenKey;
+
+            let currentIdx = Math.floor(Math.random() * emptyKeys.length);
+
+            function movePointerToCell(cellId, speedMs) {
+                const cell = document.getElementById(`cell-${cellId}`);
+                if (!cell) return;
+
+                const rect = cell.getBoundingClientRect();
+                const targetX = rect.left;
+                const targetY = rect.top;
+
+                pointer.style.transition = `all ${speedMs}ms ease-out`;
+                pointer.style.left = `${targetX}px`;
+                pointer.style.top = `${targetY}px`;
+                pointer.style.width = `${rect.width}px`;
+                pointer.style.height = `${rect.height}px`;
+            }
+            function executionTick(now) {
+                const elapsed = now - startTime;
+                let progress = elapsed / totalDuration;
+                if (progress > 1) progress = 1;
+
+                let currentKey;
+                let nextDelay;
+                let offsets = [-2, -1, 1, 2];
+                let randomOffset = offsets[Math.floor(Math.random() * offsets.length)];
+
+                currentIdx = (currentIdx + randomOffset + emptyKeys.length) % emptyKeys.length;
+
+                if (progress < 0.5) {
+                    currentKey = emptyKeys[currentIdx];
+                    nextDelay = 140 + progress * 150;
+                }
+                else if (progress >= 0.5 && progress < 0.9) {
+                    const fakeIdx = emptyKeys.indexOf(fakeChosenKey);
+                    let fakeOffsets = [-2, -1, 1, 2];
+                    let targetIdx = fakeIdx + fakeOffsets[Math.floor(Math.random() * fakeOffsets.length)];
+                    targetIdx = Math.max(0, Math.min(emptyKeys.length - 1, targetIdx));
+
+                    currentKey = emptyKeys[targetIdx];
+                    nextDelay = 450 + ((progress - 0.5) / 0.4) * 300;
+                }
+                else {
+                    currentKey = finalChosenKey;
+                    nextDelay = 500;
+                }
+
+                movePointerToCell(currentKey, nextDelay * 0.85);
+
+                const currentCell = document.getElementById(`cell-${currentKey}`);
+                if (progress >= 0.5 && progress < 0.9 && currentKey === fakeChosenKey && currentCell) {
+                    currentCell.classList.add('neon-fake-target');
+                }
+
+                if (elapsed < totalDuration) {
+                    setTimeout(() => requestAnimationFrame(executionTick), nextDelay);
+                } else {
+                    setTimeout(() => {
+                        pointer.style.display = 'none';
+                        emptyKeys.forEach(key => {
+                            const cell = document.getElementById(`cell-${key}`);
+                            if (cell) cell.classList.remove('neon-fake-target');
+                        });
+
+                        const targetCellEl = document.getElementById(`cell-${finalChosenKey}`);
+                        if (targetCellEl) {
+                            targetCellEl.classList.add('neon-lock-active');
+                            scrollElementIntoContainer(targetCellEl, document.getElementById('classroom-viewport'));
+                        }
+
+                        classroomData[finalChosenKey] = studentName;
+                        waitingStudents = waitingStudents.filter(s => s !== studentName);
+
+                        initLoadAndSync(false);
+                        playDropSettle(finalChosenKey);
+
+                        actionButton.disabled = false;
+                        actionButton.innerText = "🎯 QUAY VỊ TRÍ";
+                    }, nextDelay * 0.9);
+                }
+            }
+            requestAnimationFrame(executionTick);
+        }
+
+        function autoAssignAllClassroom() {
+            if (isWaveAnimating) return;
+
+            // Nếu hàng đợi trống nhưng lớp đã có học sinh ngồi (bấm lần 2, lần 3...):
+            // đưa toàn bộ học sinh đang ngồi (trừ các bàn đã khóa) về hàng đợi để xếp ngẫu nhiên lại từ đầu
+            if (waitingStudents.length === 0) {
+                const seatedStudents = [];
+                Object.keys(classroomData).forEach(key => {
+                    if (classroomData[key] !== 'DISABLED') {
+                        seatedStudents.push(classroomData[key]);
+                        delete classroomData[key];
+                    }
+                });
+
+                if (seatedStudents.length === 0) {
+                    alert("Hàng chờ trống rỗng! Không còn học sinh nào để xếp tự động.");
+                    return;
+                }
+
+                seatedStudents.sort((a, b) => originalStudentsList.indexOf(a) - originalStudentsList.indexOf(b));
+                waitingStudents.push(...seatedStudents);
+            }
+
+            const activeEmptyKeys = [];
+            for (let b = 1; b <= totalBlocks; b++) {
+                for (let r = 1; r <= totalRows; r++) {
+                    for (let s = 1; s <= 2; s++) {
+                        const key = `b${b}-r${r}-s${s}`;
+                        if (!classroomData[key]) {
+                            activeEmptyKeys.push(key);
+                        }
+                    }
+                }
+            }
+
+            if (activeEmptyKeys.length === 0) {
+                alert("Không còn ô bàn ghế trống nào khả dụng!");
+                return;
+            }
+
+            isWaveAnimating = true;
+            const btnRandom = document.getElementById('btn-random-all');
+            btnRandom.disabled = true;
+            btnRandom.innerText = "⚡ ĐANG QUÉT SƠ ĐỒ...";
+
+            for (let i = activeEmptyKeys.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [activeEmptyKeys[i], activeEmptyKeys[j]] = [activeEmptyKeys[j], activeEmptyKeys[i]];
+            }
+
+            const fillLimit = Math.min(waitingStudents.length, activeEmptyKeys.length);
+            const temporaryAssignments = [];
+            for (let k = 0; k < fillLimit; k++) {
+                const currentStudent = waitingStudents.shift();
+                temporaryAssignments.push({ key: activeEmptyKeys[k], name: currentStudent });
+            }
+
+            let maxOverallDelay = 0;
+
+            temporaryAssignments.forEach((assign) => {
+                const parts = assign.key.split('-');
+                const b = parseInt(parts[0].substring(1));
+                const r = parseInt(parts[1].substring(1));
+                const s = parseInt(parts[2].substring(1));
+
+                const waveDelay = (b * 280) + (r * 40);
+                const revealDelay = waveDelay + 1200;
+                maxOverallDelay = Math.max(maxOverallDelay, revealDelay);
+
+                const cellEl = document.getElementById(`cell-${assign.key}`);
+                if (!cellEl) return;
+
+                setTimeout(() => {
+                    cellEl.classList.add('wave-scanning-edge');
+                    const intervalId = setInterval(() => {
+                        const fakeCode = Math.floor(Math.random() * 90) + 10;
+                        const innerCryptoEl = cellEl.querySelector('.matrix-loading-text');
+                        if (innerCryptoEl) {
+                            innerCryptoEl.innerText = `🎲 [ ${fakeCode} ]`;
+                        }
+                    }, 60);
+
+                    cellEl.innerHTML = `
+                <div class="text-[9px] font-mono text-stone-400 font-bold">Chỗ ${getSeatSerialNumber(b, r, s)}</div>
+                <div class="text-[11px] text-center matrix-loading-text tracking-widest my-1">🎲 [ -- ]</div>
+            `;
+                    cellEl.dataset.intervalId = intervalId;
+                }, waveDelay);
+
+                setTimeout(() => {
+                    if (cellEl.dataset.intervalId) {
+                        clearInterval(parseInt(cellEl.dataset.intervalId));
+                    }
+
+                    classroomData[assign.key] = assign.name;
+                    cellEl.classList.remove('wave-scanning-edge');
+                    cellEl.draggable = true;
+                    cellEl.className = "classroom-cell rounded-lg border-2 p-2 flex flex-col justify-between relative select-none cursor-pointer group text-left bg-amber-50/20 border-stone-800 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] text-stone-800 hover:bg-amber-50/60";
+
+                    cellEl.innerHTML = `
+                <div class="text-[9px] font-mono font-bold text-stone-400 flex justify-between items-center w-full">
+                    <span>Chỗ ${getSeatSerialNumber(b, r, s)}</span>
+                    <span class="text-stone-400 hover:text-red-600 font-black text-sm px-1 cursor-pointer transition-colors hidden" onclick="event.stopPropagation(); releaseSeatToWaitingOriginal('${assign.key}')">×</span>
+                </div>
+                <div class="text-xs font-black text-center truncate px-0.5 text-emerald-800 font-mono tracking-wide mb-1 w-full flex flex-col items-center justify-center" title="${assign.name}">
+                    ${getOfficerBadge(assign.name)}
+                    <div class="truncate max-w-full">${getShortName(assign.name, originalStudentsList)}</div>
+                </div>
+            `;
+
+                    // Đăng ký lại sự kiện chuột phải cho ô được sinh ra ngẫu nhiên
+                    cellEl.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        if (isWaveAnimating) return;
+                        currentMenuTargetKey = assign.key;
+                        showContextMenu(e, assign.key);
+                    });
+
+                    playDropSettle(assign.key);
+                }, revealDelay);
+            });
+
+            setTimeout(() => {
+                isWaveAnimating = false;
+                btnRandom.disabled = false;
+                btnRandom.innerText = "🔀 Xếp Tự Động";
+                initLoadAndSync(false);
+            }, maxOverallDelay + 300);
+        }
+
+        // Hàm tạo badge chức vụ tĩnh (Không dính css hover/hiệu ứng động khi chụp)
+        function getCloneOfficerBadge(studentName) {
+            const role = officerData[studentName];
+            if (!role) return "";
+            const badges = {
+                "Lớp trưởng": { icon: "👑", color: "bg-amber-100 border-amber-400" },
+                "Lớp phó": { icon: "🎖️", color: "bg-sky-100 border-sky-400" },
+                "Bí thư": { icon: "📌", color: "bg-rose-100 border-rose-400" },
+                "Tổ trưởng": { icon: "⭐", color: "bg-emerald-100 border-emerald-400" },
+                "Thư ký": { icon: "📝", color: "bg-purple-100 border-purple-400" }
+            };
+            const b = badges[role];
+            return b ? `<div class="absolute top-1 right-1 w-6 h-6 rounded-full border ${b.color} flex items-center justify-center text-[13px] shadow-sm select-none z-10">${b.icon}</div>` : "";
+        }
+
+        // Hàm đồng bộ hóa dữ liệu thực tế từ hệ thống sang Khung ảnh tĩnh
+        // Hàm đồng bộ hóa dữ liệu thực tế từ hệ thống sang Khung ảnh tĩnh chuẩn tỷ lệ
+        // KHUNG CỐ ĐỊNH TỶ LỆ 19:10 (1520 x 800). Nội dung được co giãn (scale) + căn giữa
+        // để luôn vừa vặn trong khung, không bị cắt xén dù lớp đông học sinh hay chạy trên
+        // màn hình nhỏ (MacBook...). Ảnh xuất ra luôn giữ tỷ lệ 19:10 cố định.
+        function updateClassroomCloneView() {
+            const cloneGrid = document.getElementById('classroom-clone-grid');
+            if (!cloneGrid) return;
+
+            // Ép khoảng cách tổ đều nhau
+            cloneGrid.style.gridTemplateColumns = `repeat(${totalBlocks}, minmax(0, 1fr))`;
+
+            let gridBlocksHtml = '';
+            for (let b = 1; b <= totalBlocks; b++) {
+                let rowsHtml = '';
+                for (let r = 1; r <= totalRows; r++) {
+                    let cellsHtml = '';
+                    for (let s = 1; s <= 2; s++) {
+                        const cellKey = `b${b}-r${r}-s${s}`;
+                        const status = classroomData[cellKey];
+
+                        if (status === 'DISABLED') {
+                            cellsHtml += `
+                        <div class="aspect-[34/20] w-full rounded-lg bg-rose-50/60 bg-[linear-gradient(45deg,#ffe4e6_25%,transparent_25%,transparent_50%,#ffe4e6_50%,#ffe4e6_75%,transparent_75%,transparent)] bg-[size:12px_12px] border-2 border-dashed border-rose-900/20 text-rose-900/40 p-2 relative flex flex-col justify-between box-border">
+                            <div class="text-[9px] font-mono tracking-widest font-bold opacity-60">Chỗ ${getSeatSerialNumber(b, r, s)}</div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="italic text-rose-900/60 text-[10px] font-extrabold tracking-widest uppercase">Khóa</span>
+                            </div>
+                        </div>
+                    `;
+                        } else if (status) {
+                            cellsHtml += `
+                        <div class="aspect-[34/20] w-full rounded-lg border-2 border-stone-800 bg-amber-50/20 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] text-stone-800 p-2 flex flex-col justify-between relative box-border overflow-visible">
+                            <div class="text-[9px] font-mono font-bold text-stone-400">Chỗ ${getSeatSerialNumber(b, r, s)}</div>
+                            <div class="text-base font-black text-center truncate px-0.5 text-emerald-800 font-mono tracking-wide mb-1 w-full flex flex-col items-center justify-center leading-tight">
+                                ${getCloneOfficerBadge(status)}
+                                <div class="truncate max-w-full">${getShortName(status, originalStudentsList)}</div>
+                            </div>
+                        </div>
+                    `;
+                        } else {
+                            cellsHtml += `
+                        <div class="aspect-[34/20] w-full rounded-lg border-2 border-stone-300 border-dashed bg-stone-50/50 text-stone-400 p-2 flex flex-col justify-between relative box-border">
+                            <div class="text-[9px] font-mono font-medium text-stone-400">Chỗ ${getSeatSerialNumber(b, r, s)}</div>
+                            <div class="text-[10px] font-bold italic text-center text-stone-300 uppercase tracking-wider mb-1">Trống</div>
+                        </div>
+                    `;
+                        }
+                    }
+                    // Tăng khoảng cách (gap-4) giữa 2 bàn trong một hàng cho thoáng và chuẩn tỷ lệ
+                    rowsHtml += `<div class="grid grid-cols-2 gap-4">${cellsHtml}</div>`;
+                }
+
+                gridBlocksHtml += `
+            <div class="space-y-4 bg-white p-5 rounded-xl border-2 border-stone-800 shadow-[4px_4px_0px_0px_rgba(41,37,36,1)]">
+                <div class="text-center text-[11px] font-black uppercase tracking-wider text-stone-500 mb-2 border-b border-stone-100 pb-1">Dãy Tổ Số ${b}</div>
+                ${rowsHtml}
+            </div>
+        `;
+            }
+            cloneGrid.innerHTML = gridBlocksHtml;
+
+            // Auto-fit: co giãn khối nội dung sao cho vừa vặn trong khung cố định 19:10
+            // rồi căn giữa -> đảm bảo không bị cắt, ảnh xuất ra luôn tỷ lệ 19:10.
+            requestAnimationFrame(fitCloneContentToFrame);
+        }
+
+        // Co giãn (scale) khối nội dung clone + căn giữa để vừa vặn khung 19:10.
+        // Dùng để khung ảnh cố định bất kể số học sinh / độ phân giải màn hình.
+        function fitCloneContentToFrame() {
+            const frame = document.getElementById('classroom-clone-container');
+            const content = document.getElementById('classroom-clone-content');
+            if (!frame || !content) return;
+
+            const FRAME_W = 1520;
+            const FRAME_H = 800;
+
+            // Reset tạm thời để đo chiều cao thật của nội dung
+            content.style.transform = 'scale(1)';
+            const naturalH = content.offsetHeight;
+
+            // Nếu nội dung cao hơn khung -> thu nhỏ; ngược lại giữ nguyên (tránh phóng to mờ)
+            const scale = naturalH > FRAME_H ? FRAME_H / naturalH : 1;
+            content.style.transform = `scale(${scale})`;
+        }
+
+        // Khi cửa sổ thay đổi kích thước, tính lại scale để xem trước luôn khớp khung
+        window.addEventListener('resize', fitCloneContentToFrame);
+
+        // Hàm chụp ảnh sơ đồ từ khối hiển thị cố định
+        async function exportToPngClassroom() {
+            if (isWaveAnimating) return;
+
+            const btnExport = document.getElementById('btn-export-png');
+            const oldBtnText = btnExport.innerText;
+            btnExport.disabled = true;
+            btnExport.innerText = "📸 Đang xuất ảnh...";
+
+            // Luôn chắc chắn dữ liệu bản xem trước được cập nhật mới nhất trước khi chụp
+            updateClassroomCloneView();
+            const cloneContainer = document.getElementById('classroom-clone-container');
+
+            try {
+                // Chờ trình duyệt xử lý xong các tác vụ giao diện trước đó
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+                // Đảm bảo nội dung đã được co giãn + căn giữa khớp khung 19:10 trước khi chụp
+                fitCloneContentToFrame();
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+                // Thực hiện chụp trực tiếp thẻ clone hiển thị thực trên trang (khung cố định 19:10)
+                const dataUrl = await htmlToImage.toPng(cloneContainer, {
+                    backgroundColor: "#fcfbf7",
+                    cacheBust: true,
+                    pixelRatio: 2 // Tăng mật độ điểm ảnh cho bản in cực kỳ nét
+                });
+
+                // Tự động tải ảnh sơ đồ hoàn chỉnh về thiết bị
+                const link = document.createElement("a");
+                link.download = `sodo-lop-hoc-${new Date().toISOString().slice(0, 10)}.png`;
+                link.href = dataUrl;
+                link.click();
+
+            } catch (error) {
+                console.error("Lỗi trích xuất ảnh sơ đồ:", error);
+                alert("Có lỗi xảy ra khi tạo file ảnh, bạn hãy thử lại nhé!");
+            } finally {
+                btnExport.disabled = false;
+                btnExport.innerText = oldBtnText;
+            }
+        }
+
+        function renderWaitingListUI() {
+            waitingListEl.innerHTML = '';
+            const searchInput = document.getElementById('search-waiting');
+            const searchKey = searchInput ? searchInput.value.toLowerCase().trim() : '';
+            const filteredWaiting = waitingStudents.filter(student => student.toLowerCase().includes(searchKey));
+
+            if (filteredWaiting.length === 0) {
+                waitingListEl.innerHTML = '<p class="text-xs text-stone-400 italic text-center py-6 font-medium">Không tìm thấy học sinh phù hợp!</p>';
+                return;
+            }
+
+            filteredWaiting.forEach((student) => {
+                const item = document.createElement('div');
+                item.className = "bg-white border-2 border-stone-800 text-stone-800 rounded-lg px-3 py-2 text-xs font-bold flex justify-between items-center shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition hover:bg-amber-50/50";
+
+                if (!isWaveAnimating) {
+                    item.className += " cursor-grab active:cursor-grabbing";
+                    item.draggable = true;
+                    item.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'FROM_WAITING', name: student }));
+                        item.classList.add('dragging');
+                    });
+                    item.addEventListener('dragend', () => item.classList.remove('dragging'));
+                } else {
+                    item.className += " opacity-50 cursor-not-allowed";
+                    item.draggable = false;
+                }
+
+                item.innerHTML = `
+            <span class="truncate font-mono pr-2 flex items-center">${getOfficerBadge(student)}${student}</span>
+            <span class="text-stone-400 text-xs select-none">⋮⋮</span>
+        `;
+
+                item.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    if (isWaveAnimating) return;
+                    showContextMenu(e, `waiting:${student}`);
+                });
+
+                waitingListEl.appendChild(item);
+            });
+        }
+        document.getElementById('search-waiting').addEventListener('input', renderWaitingListUI);
+    </script>
+</body>
+
+</html>
