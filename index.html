@@ -424,15 +424,8 @@
                     <div id="classroom-grid" class="w-full max-w-7xl grid gap-[clamp(10px,1.5vw,24px)] p-1"></div>
                 </div>
 
-                <div class="w-full max-w-7xl mt-12 mb-20 grid grid-cols-12 gap-4 shrink-0">
-                    <div
-                        class="col-span-8 bg-stone-800 text-amber-50 border-2 border-stone-950 font-bold py-3.5 text-center rounded-xl shadow-[4px_4px_0px_0px_rgba(120,113,108,0.3)] tracking-widest text-xs select-none uppercase font-serif">
-                        🌿 BẢNG ĐEN LỚP HỌC
-                    </div>
-                    <div
-                        class="col-span-4 bg-amber-100/80 border-2 border-dashed border-amber-800 text-amber-900 font-bold py-3.5 text-center rounded-xl text-xs select-none uppercase">
-                        👩‍🏫 BÀN GIÁO VIÊN
-                    </div>
+                <div class="w-full max-w-7xl mt-12 mb-20 shrink-0">
+                    <div id="board-teacher-row" class="relative grid grid-cols-12 gap-4 group"></div>
                 </div>
 
                 <div class="fixed bottom-6 z-50 w-full px-6 flex justify-center pointer-events-none">
@@ -627,16 +620,7 @@
 
                     <div id="classroom-clone-grid" class="w-full grid gap-6 p-1"></div>
 
-                    <div class="w-full grid grid-cols-12 gap-4">
-                        <div
-                            class="col-span-8 bg-stone-800 text-amber-50 border-2 border-stone-950 font-bold py-3.5 text-center rounded-xl shadow-[4px_4px_0px_0px_rgba(120,113,108,0.3)] tracking-widest text-xs uppercase font-serif">
-                            🌿 BẢNG ĐEN LỚP HỌC
-                        </div>
-                        <div
-                            class="col-span-4 bg-amber-100/80 border-2 border-dashed border-amber-800 text-amber-900 font-bold py-3.5 text-center rounded-xl text-xs uppercase">
-                            👩‍🏫 BÀN GIÁO VIÊN
-                        </div>
-                    </div>
+                    <div class="w-full grid grid-cols-12 gap-4" id="classroom-clone-board-row"></div>
                 </div>
 
             </div>
@@ -655,6 +639,7 @@
         // Khi false -> dùng totalRows do người dùng chọn trong modal cài đặt.
         let autoRows = true;
         let manualRows = 5; // giá trị số hàng khi người dùng tắt chế độ tự động
+        let boardOnLeft = true; // true: Bảng đen bên trái - Bàn giáo viên bên phải (mặc định); false: đảo ngược
 
         // ===================== TRUE RANDOM ENGINE (nâng cấp độ ngẫu nhiên) =====================
         // Thay vì chỉ dùng Math.random() (thuật toán giả ngẫu nhiên chu kỳ ngắn, dễ lặp mẫu),
@@ -695,6 +680,105 @@
         const lblTotalSeats = document.getElementById('lbl-total-seats');
         const contextMenu = document.getElementById('custom-context-menu');
         const lblAvailableSeats = document.getElementById('lbl-available-seats');
+
+        // ===================== KÉO-THẢ ĐỔI VỊ TRÍ BẢNG ĐEN ⇄ BÀN GIÁO VIÊN =====================
+        // Vẽ lại 2 khối "Bảng đen lớp học" và "Bàn giáo viên" theo trạng thái boardOnLeft,
+        // đồng thời gắn sự kiện kéo-thả (desktop) và nút hoán đổi nhanh (hỗ trợ cảm ứng/mobile).
+        function renderBoardTeacherRow() {
+            const container = document.getElementById('board-teacher-row');
+            if (!container) return;
+
+            const boardBlockHtml = `
+                <div id="block-board" draggable="true"
+                    class="col-span-8 bg-stone-800 text-amber-50 border-2 border-stone-950 font-bold py-3.5 text-center rounded-xl shadow-[4px_4px_0px_0px_rgba(120,113,108,0.3)] tracking-widest text-xs select-none uppercase font-serif cursor-grab active:cursor-grabbing transition hover:brightness-110"
+                    title="Kéo thả để đổi vị trí với Bàn giáo viên">
+                    🌿 BẢNG ĐEN LỚP HỌC
+                </div>`;
+
+            const teacherBlockHtml = `
+                <div id="block-teacher" draggable="true"
+                    class="col-span-4 bg-amber-100/80 border-2 border-dashed border-amber-800 text-amber-900 font-bold py-3.5 text-center rounded-xl text-xs select-none uppercase cursor-grab active:cursor-grabbing transition hover:brightness-105"
+                    title="Kéo thả để đổi vị trí với Bảng đen">
+                    👩‍🏫 BÀN GIÁO VIÊN
+                </div>`;
+
+            const leftClass = boardOnLeft ? 'left-2/3' : 'left-1/3';
+            container.innerHTML = (boardOnLeft ? (boardBlockHtml + teacherBlockHtml) : (teacherBlockHtml + boardBlockHtml)) + `
+                <button type="button" id="btn-swap-board-teacher" title="Đổi vị trí Bảng đen ⇄ Bàn giáo viên"
+                    class="absolute ${leftClass} top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white border-2 border-stone-800 shadow-[2px_2px_0px_0px_#292524] flex items-center justify-center text-stone-700 hover:bg-emerald-50 hover:border-emerald-600 hover:text-emerald-700 hover:scale-110 cursor-pointer transition opacity-0 group-hover:opacity-100">
+                    <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 3 4 7l4 4" />
+                        <path d="M4 7h16" />
+                        <path d="M16 21l4-4-4-4" />
+                        <path d="M20 17H4" />
+                    </svg>
+                </button>`;
+
+            document.getElementById('btn-swap-board-teacher').addEventListener('click', swapBoardTeacherPosition);
+            attachBoardTeacherDragEvents();
+        }
+
+        function swapBoardTeacherPosition() {
+            boardOnLeft = !boardOnLeft;
+            renderBoardTeacherRow();
+            updateClassroomCloneView();
+            saveToLocalStorage();
+
+            requestAnimationFrame(() => {
+                document.querySelectorAll('#block-board, #block-teacher').forEach(el => {
+                    el.classList.add('cell-shift-pulse');
+                    el.addEventListener('animationend', () => el.classList.remove('cell-shift-pulse'), { once: true });
+                });
+            });
+        }
+
+        function attachBoardTeacherDragEvents() {
+            const blocks = document.querySelectorAll('#block-board, #block-teacher');
+            blocks.forEach(block => {
+                block.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', block.id);
+                    setTimeout(() => block.classList.add('opacity-40'), 0);
+                });
+                block.addEventListener('dragend', () => {
+                    block.classList.remove('opacity-40');
+                });
+                block.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    block.classList.add('ring-4', 'ring-emerald-400');
+                });
+                block.addEventListener('dragleave', () => {
+                    block.classList.remove('ring-4', 'ring-emerald-400');
+                });
+                block.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    block.classList.remove('ring-4', 'ring-emerald-400');
+                    const draggedId = e.dataTransfer.getData('text/plain');
+                    if (draggedId && draggedId !== block.id) {
+                        swapBoardTeacherPosition();
+                    }
+                });
+            });
+        }
+
+        // Vẽ khối Bảng đen / Bàn giáo viên trong bản xem trước dùng để xuất ảnh (đồng bộ với trạng thái hiện tại)
+        function renderCloneBoardTeacherRow() {
+            const cloneRow = document.getElementById('classroom-clone-board-row');
+            if (!cloneRow) return;
+
+            const boardBlockHtml = `
+                <div class="col-span-8 bg-stone-800 text-amber-50 border-2 border-stone-950 font-bold py-3.5 text-center rounded-xl shadow-[4px_4px_0px_0px_rgba(120,113,108,0.3)] tracking-widest text-xs uppercase font-serif">
+                    🌿 BẢNG ĐEN LỚP HỌC
+                </div>`;
+            const teacherBlockHtml = `
+                <div class="col-span-4 bg-amber-100/80 border-2 border-dashed border-amber-800 text-amber-900 font-bold py-3.5 text-center rounded-xl text-xs uppercase">
+                    👩‍🏫 BÀN GIÁO VIÊN
+                </div>`;
+
+            cloneRow.innerHTML = boardOnLeft ? (boardBlockHtml + teacherBlockHtml) : (teacherBlockHtml + boardBlockHtml);
+        }
+        // ========================================================================================
 
         // Tính số thứ tự bàn theo kiểu "rắn zigzac":
         // - Bắt đầu từ bàn dưới cùng, ngoài cùng bên PHẢI = số 1
@@ -806,7 +890,8 @@
                 studentList: txtStudents.value,
                 totalBlocks: totalBlocks,
                 autoRows: autoRows,
-                manualRows: manualRows
+                manualRows: manualRows,
+                boardOnLeft: boardOnLeft
             };
             localStorage.setItem('retroClassData', JSON.stringify(dataToSave));
         }
@@ -829,6 +914,9 @@
                 if (typeof parsed.manualRows === 'number') {
                     manualRows = parsed.manualRows;
                 }
+                if (typeof parsed.boardOnLeft === 'boolean') {
+                    boardOnLeft = parsed.boardOnLeft;
+                }
             }
         }
 
@@ -839,6 +927,7 @@
 
             loadFromLocalStorage();
             initLoadAndSync(true);
+            renderBoardTeacherRow();
 
             // Đóng context menu khi click ra ngoài
             document.addEventListener("click", (e) => { if (!contextMenu.contains(e.target)) { hideContextMenu(); } });
@@ -1628,7 +1717,7 @@
 
                 let currentKey;
                 let nextDelay;
-                let offsets = [-2, -1, 0, 1, 2];
+                let offsets = [-2, -1, 1, 2];
                 let randomOffset = offsets[trueRandomInt(offsets.length)];
 
                 currentIdx = (currentIdx + randomOffset + emptyKeys.length) % emptyKeys.length;
@@ -1639,7 +1728,7 @@
                 }
                 else if (progress >= 0.5 && progress < 0.9) {
                     const fakeIdx = emptyKeys.indexOf(fakeChosenKey);
-                    let fakeOffsets = [-2, -1, 0, 1, 2];
+                    let fakeOffsets = [-2, -1, 1, 2];
                     let targetIdx = fakeIdx + fakeOffsets[trueRandomInt(fakeOffsets.length)];
                     targetIdx = Math.max(0, Math.min(emptyKeys.length - 1, targetIdx));
 
@@ -1891,6 +1980,7 @@
         `;
             }
             cloneGrid.innerHTML = gridBlocksHtml;
+            renderCloneBoardTeacherRow();
 
             // Auto-fit: co giãn khối nội dung sao cho vừa vặn trong khung cố định 19:10
             // rồi căn giữa -> đảm bảo không bị cắt, ảnh xuất ra luôn tỷ lệ 19:10.
