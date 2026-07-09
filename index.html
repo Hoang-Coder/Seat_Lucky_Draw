@@ -817,11 +817,34 @@
                 if (isWaveAnimating) return;
                 startCyberLuckyDrawAnimation();
             });
+            let isCyberDrawLocked = false;
+
             document.addEventListener('keydown', (event) => {
+                // 2. Kiểm tra nếu người dùng đang nhập dữ liệu thì bỏ qua
+                const isTyping = event.target.tagName === 'INPUT' ||
+                    event.target.tagName === 'TEXTAREA' ||
+                    event.target.isContentEditable;
+
+                if (isTyping) return;
+
+                // 3. Xử lý sự kiện phím Cách
                 if (event.code === 'Space' || event.key === ' ') {
                     event.preventDefault();
 
+                    // 4. Nếu đang trong thời gian khóa 7 giây, chặn không cho chạy hàm
+                    if (isCyberDrawLocked) {
+                        console.log("Vui lòng đợi, hệ thống đang cooldown 7 giây!");
+                        return;
+                    }
+
+                    // 5. Kích hoạt hiệu ứng bốc thăm
                     startCyberLuckyDrawAnimation();
+
+                    // 6. Bật khóa và hẹn giờ mở khóa sau đúng 6200 mili-giây (6.2 giây)
+                    isCyberDrawLocked = true;
+                    setTimeout(() => {
+                        isCyberDrawLocked = false;
+                    }, 6200);
                 }
             });
             document.getElementById('btn-random-all').addEventListener('click', autoAssignAllClassroom);
