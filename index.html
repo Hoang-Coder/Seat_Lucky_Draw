@@ -656,6 +656,38 @@
         let autoRows = true;
         let manualRows = 5; // giá trị số hàng khi người dùng tắt chế độ tự động
 
+        // ===================== TRUE RANDOM ENGINE (nâng cấp độ ngẫu nhiên) =====================
+        // Thay vì chỉ dùng Math.random() (thuật toán giả ngẫu nhiên chu kỳ ngắn, dễ lặp mẫu),
+        // engine này ưu tiên Web Crypto API (window.crypto.getRandomValues) - nguồn ngẫu nhiên
+        // thực sự dựa trên entropy phần cứng của hệ điều hành, cho tỷ lệ phân bố đều và
+        // "ngẫu nhiên thật" cao hơn nhiều so với Math.random() thông thường.
+        // Nếu trình duyệt không hỗ trợ Crypto API, sẽ tự động dự phòng bằng Math.random().
+        function trueRandom() {
+            if (window.crypto && window.crypto.getRandomValues) {
+                const buffer = new Uint32Array(1);
+                window.crypto.getRandomValues(buffer);
+                return buffer[0] / 4294967296; // chuẩn hoá về khoảng [0, 1)
+            }
+            return Math.random();
+        }
+
+        // Sinh số nguyên ngẫu nhiên đều trong khoảng [0, max) - dùng cho index mảng
+        function trueRandomInt(maxExclusive) {
+            return Math.floor(trueRandom() * maxExclusive);
+        }
+
+        // Thuật toán Fisher-Yates chuẩn, dùng trueRandom() để đảm bảo mọi hoán vị
+        // đều có xác suất xảy ra bằng nhau (unbiased shuffle) - áp dụng cho mọi tính năng
+        // xáo trộn/random trong hệ thống (hàng đợi, xếp tự động, quay số may mắn...).
+        function fisherYatesShuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = trueRandomInt(i + 1);
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+        // ========================================================================================
+
         const classroomGrid = document.getElementById('classroom-grid');
         const waitingListEl = document.getElementById('waiting-list');
         const txtStudents = document.getElementById('txt-students');
@@ -978,10 +1010,7 @@
 
         function shuffleWaitingList() {
             if (waitingStudents.length <= 1) return;
-            for (let i = waitingStudents.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [waitingStudents[i], waitingStudents[j]] = [waitingStudents[j], waitingStudents[i]];
-            }
+            fisherYatesShuffle(waitingStudents);
             renderWaitingListUI();
             saveToLocalStorage();
         }
@@ -1561,7 +1590,7 @@
         }
 
         function runPremiumNeonScanProcess(studentName, emptyKeys, actionButton) {
-            const totalDuration = Math.floor(Math.random() * (6000 - 3500 + 1)) + 3500;
+            const totalDuration = Math.floor(trueRandom() * (6000 - 3500 + 1)) + 3500;
             const startTime = performance.now();
 
             let pointer = document.getElementById('neon-shuttle-pointer');
@@ -1572,11 +1601,11 @@
             }
             pointer.style.display = 'block';
 
-            const finalChosenKey = emptyKeys[Math.floor(Math.random() * emptyKeys.length)];
+            const finalChosenKey = emptyKeys[trueRandomInt(emptyKeys.length)];
             let fakeKeys = emptyKeys.filter(k => k !== finalChosenKey);
-            let fakeChosenKey = fakeKeys.length > 0 ? fakeKeys[Math.floor(Math.random() * fakeKeys.length)] : finalChosenKey;
+            let fakeChosenKey = fakeKeys.length > 0 ? fakeKeys[trueRandomInt(fakeKeys.length)] : finalChosenKey;
 
-            let currentIdx = Math.floor(Math.random() * emptyKeys.length);
+            let currentIdx = trueRandomInt(emptyKeys.length);
 
             function movePointerToCell(cellId, speedMs) {
                 const cell = document.getElementById(`cell-${cellId}`);
@@ -1599,8 +1628,8 @@
 
                 let currentKey;
                 let nextDelay;
-                let offsets = [-2, -1, 1, 2];
-                let randomOffset = offsets[Math.floor(Math.random() * offsets.length)];
+                let offsets = [-2, -1, 0, 1, 2];
+                let randomOffset = offsets[trueRandomInt(offsets.length)];
 
                 currentIdx = (currentIdx + randomOffset + emptyKeys.length) % emptyKeys.length;
 
@@ -1610,8 +1639,8 @@
                 }
                 else if (progress >= 0.5 && progress < 0.9) {
                     const fakeIdx = emptyKeys.indexOf(fakeChosenKey);
-                    let fakeOffsets = [-2, -1, 1, 2];
-                    let targetIdx = fakeIdx + fakeOffsets[Math.floor(Math.random() * fakeOffsets.length)];
+                    let fakeOffsets = [-2, -1, 0, 1, 2];
+                    let targetIdx = fakeIdx + fakeOffsets[trueRandomInt(fakeOffsets.length)];
                     targetIdx = Math.max(0, Math.min(emptyKeys.length - 1, targetIdx));
 
                     currentKey = emptyKeys[targetIdx];
@@ -1704,10 +1733,7 @@
             btnRandom.disabled = true;
             btnRandom.innerText = "⚡ ĐANG QUÉT SƠ ĐỒ...";
 
-            for (let i = activeEmptyKeys.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [activeEmptyKeys[i], activeEmptyKeys[j]] = [activeEmptyKeys[j], activeEmptyKeys[i]];
-            }
+            fisherYatesShuffle(activeEmptyKeys);
 
             const fillLimit = Math.min(waitingStudents.length, activeEmptyKeys.length);
             const temporaryAssignments = [];
@@ -1734,7 +1760,7 @@
                 setTimeout(() => {
                     cellEl.classList.add('wave-scanning-edge');
                     const intervalId = setInterval(() => {
-                        const fakeCode = Math.floor(Math.random() * 90) + 10;
+                        const fakeCode = trueRandomInt(90) + 10;
                         const innerCryptoEl = cellEl.querySelector('.matrix-loading-text');
                         if (innerCryptoEl) {
                             innerCryptoEl.innerText = `🎲 [ ${fakeCode} ]`;
