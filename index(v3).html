@@ -799,7 +799,7 @@
 
         window.addEventListener('DOMContentLoaded', () => {
             if (!localStorage.getItem('retroClassData')) {
-                txtStudents.value = "Lê Trường An\nHoàng Kỳ Anh\nNguyễn Tuấn Anh\nLê Ngọc Anh\nĐinh Diệp Ánh\nÂu Mạnh Bách\nTrần Lương Bằng\nVũ Gia Bình\nThạch Bảo Châu\nTrần Đoàn Trí Đức\nNguyễn Tuấn Dũng\nTrần Quốc Dũng\nNguyễn Vũ Dũng\nĐinh Tiến Dũng\nDoãn Vũ Hoàng Dũng\nNguyễn Ngọc Giang\nPhạm Nguyễn Ngân Hà\nLê Thuý Hà\nNguyễn Trung Hải\nNguyễn Như Hải\nNguyễn Trọng Hiếu\nNguyễn Thu Hương\nNguyễn Danh Trí Huy\nPhạm Hồng Gia Khánh\nNguyễn Nam Khánh\nLý Công Hà Khoa\nHứa Kin\nTrần Trang Linh\nĐào Đại Quang Long\nNguyễn Huyền Mai\nNguyễn Đức Minh\nBạch Gia Minh\nNguyễn Trà My\nMai Nguyễn Khoa Nam\nNguyễn Hải Nam\nHoàng Hải Nam\nHồ Nguyễn Đức Nghĩa\nNguyễn Xuân Bảo Ngọc\nNguyễn Khánh Phương\nNguyễn Thị Hoài Phương\nNguyễn Hữu Phú\nTrần Hà Thanh\nNguyễn Quang Thiên\nVũ Quốc Tiến\nBùi Minh Tiến\nTrương Minh Tiến\nNguyễn Minh Trí\nNguyễn Việt Trung\nNguyễn Minh Tuệ";
+                txtStudents.value = "";
             }
 
             loadFromLocalStorage();
@@ -928,16 +928,16 @@
                     color: "bg-amber-100 border-amber-400"
                 },
                 "Lớp phó": {
+                    icon: "⭐",
+                    color: "bg-emerald-100 border-emerald-400"
+                },
+                "Bí thư": {
                     icon: "🎖️",
                     color: "bg-sky-100 border-sky-400"
                 },
-                "Bí thư": {
-                    icon: "📌",
-                    color: "bg-rose-100 border-rose-400"
-                },
                 "Tổ trưởng": {
-                    icon: "⭐",
-                    color: "bg-emerald-100 border-emerald-400"
+                    icon: "📢",
+                    color: "bg-rose-100 border-rose-400"
                 },
                 "Thư ký": {
                     icon: "📝",
@@ -1769,9 +1769,9 @@
             if (!role) return "";
             const badges = {
                 "Lớp trưởng": { icon: "👑", color: "bg-amber-100 border-amber-400" },
-                "Lớp phó": { icon: "🎖️", color: "bg-sky-100 border-sky-400" },
-                "Bí thư": { icon: "📌", color: "bg-rose-100 border-rose-400" },
-                "Tổ trưởng": { icon: "⭐", color: "bg-emerald-100 border-emerald-400" },
+                "Lớp Phó": { icon: "⭐", color: "bg-emerald-100 border-emerald-400" },
+                "Bí thư": { icon: "🎖️", color: "bg-sky-100 border-sky-400" },
+                "Tổ trưởng": { icon: "📢", color: "bg-rose-100 border-rose-400" },
                 "Thư ký": { icon: "📝", color: "bg-purple-100 border-purple-400" }
             };
             const b = badges[role];
