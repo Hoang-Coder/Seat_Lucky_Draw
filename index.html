@@ -6,10 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ Thống Xếp Chỗ Ngồi Lớp Học - Phát triển bởi Ky Anh nhớ 🤟</title>
     <meta name="google-site-verification" content="ibsV7sH56t5vwOOpoxsAK6IwAXDll-vhuRrM1zkBV1I" />
-    <meta name="description" content="Hệ thống sắp xếp vị trí chỗ ngồi lớp học thông minh giúp tối ưu không gian, tự động hóa sơ đồ lớp và nâng cao hiệu quả giảng dạy chỉ với vài cú nhấp chuột. Phát triển bởi Kỳ Anh">
+    <meta name="description"
+        content="Hệ thống sắp xếp vị trí chỗ ngồi lớp học thông minh giúp tối ưu không gian, tự động hóa sơ đồ lớp và nâng cao hiệu quả giảng dạy chỉ với vài cú nhấp chuột. Phát triển bởi Kỳ Anh">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
-    <link rel="icon" href="https://img.icons8.com/?size=100&id=BN6HRCWYbGGA&format=png&color=000000" type="image/x-icon" />
+    <link rel="icon" href="https://img.icons8.com/?size=100&id=BN6HRCWYbGGA&format=png&color=000000"
+        type="image/x-icon" />
     <style>
         * {
             box-sizing: border-box;
@@ -41,6 +43,121 @@
            group-hover ở HTML), chỉ hiện khi rê chuột vào khu vực sơ đồ lớp (#classroom-grid) */
         .shift-arrow-btn {
             transition: opacity .2s ease, background-color .2s ease, border-color .2s ease, color .2s ease, transform .2s ease;
+        }
+
+        /* Các nút chọn tùy chỉnh cách đánh số chỗ ngồi (góc bắt đầu / hướng chạy) */
+        .seat-option-btn {
+            border: 2px solid #292524;
+            border-radius: 0.6rem;
+            padding: 0.5rem 0.5rem;
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+            cursor: pointer;
+            background: #fff;
+            color: #44403c;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            transition: background-color .15s ease, color .15s ease, box-shadow .15s ease, transform .1s ease, border-color .15s ease;
+        }
+
+        .seat-option-btn:hover:not(.active) {
+            background: #ecfdf5;
+            border-color: #059669;
+            color: #047857;
+        }
+
+        .seat-option-btn.active {
+            background: #059669;
+            border-color: #292524;
+            color: #fff;
+            box-shadow: 2px 2px 0px 0px rgba(41, 37, 36, 1);
+        }
+
+        .seat-option-btn:active {
+            transform: translateY(1px);
+        }
+
+        /* Khối nhóm cài đặt trong modal Cài đặt sơ đồ: nền trắng bo góc, viền đậm đồng bộ style retro */
+        .settings-section {
+            background: #ffffff;
+            border: 2px solid #292524;
+            border-radius: 0.85rem;
+            padding: 0.85rem 0.85rem 0.95rem;
+            box-shadow: 2px 2px 0px 0px rgba(41, 37, 36, 1);
+        }
+
+        .settings-section-title {
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: .03em;
+            text-transform: uppercase;
+            color: #44403c;
+            margin-bottom: 0.65rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px dashed #e7e5e4;
+        }
+
+        /* Icon chấm tròn thể hiện góc bắt đầu đánh số, đặt trong khung vuông 2x2 mini */
+        .corner-icon {
+            width: 22px;
+            height: 22px;
+            border: 2px solid currentColor;
+            border-radius: 4px;
+            position: relative;
+            opacity: .85;
+            flex-shrink: 0;
+        }
+
+        .corner-icon .dot {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            background: currentColor;
+        }
+
+        .dot-tl {
+            top: 2px;
+            left: 2px;
+        }
+
+        .dot-tr {
+            top: 2px;
+            right: 2px;
+        }
+
+        .dot-bl {
+            bottom: 2px;
+            left: 2px;
+        }
+
+        .dot-br {
+            bottom: 2px;
+            right: 2px;
+        }
+
+        .direction-icon {
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        /* Lưới xem trước thứ tự đánh số trong modal Cài đặt */
+        .seat-preview-cell {
+            aspect-ratio: 10 / 7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 800;
+            border-radius: 4px;
+            background: #e4f1e8;
+            /* border: 1.5px solid #a7f3d0; */
+            border: 1.3px solid #2b5240;
+            color: #094634d3;
         }
 
         /* Tối ưu hóa thanh cuộn phong cách Retro tinh tế */
@@ -258,40 +375,6 @@
             box-shadow: 0 0 12px rgba(13, 148, 136, 0.35) !important;
             background-color: #f0fdfa !important;
             transition: all 0.15s ease-in-out;
-        }
-
-        /* HỆ ICON SVG THỐNG NHẤT (Lucide, stroke 3 -> khớp nút mũi tên dịch chuyển).
-           - inline-flex + shrink-0: icon không bị co/kẹt trong flexbox.
-           - vertical-align: -0.15em: icon ngồi ngay hàng chữ baseline.
-           - inline SVG (không dùng web-font) -> luôn render được trong ảnh PNG xuất
-             bằng html-to-image (emoji font hệ thống sẽ BỊ MẤT khi xuất ảnh). */
-        .ic {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-            vertical-align: -0.15em;
-            line-height: 0;
-        }
-
-        .ic svg {
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Icon xoay cho trạng thái loading (quay vị trí / đang xuất ảnh) */
-        .ic-spin svg {
-            animation: icSpin 0.9s linear infinite;
-        }
-
-        @keyframes icSpin {
-            from {
-                transform: rotate(0deg);
-            }
-
-            to {
-                transform: rotate(360deg);
-            }
         }
 
         /* ============ ONBOARDING TOUR + BẢNG PHÍM TẮT + NÚT TRỢ GIÚP ============ */
@@ -548,7 +631,7 @@
 
                 <div class="w-full max-w-7xl mt-12 mb-20 grid grid-cols-12 gap-4 shrink-0">
                     <div
-                        class="col-span-8 bg-stone-800 text-amber-50 border-2 border-stone-950 font-bold py-3.5 text-center rounded-xl shadow-[4px_4px_0px_0px_rgba(120,113,108,0.3)] tracking-widest text-xs select-none uppercase font-serif">
+                        class="col-span-8 bg-stone-800 text-amber-50 border-2 border-stone-950 font-bold py-3.5 text-center rounded-xl shadow-[4px_4px_0px_0px_rgba(120,113,108,0.3)] tracking-widest text-xs select-none uppercase">
                         🌿 BẢNG ĐEN LỚP HỌC
                     </div>
                     <div
@@ -662,33 +745,103 @@
     <div id="settings-modal-backdrop"
         class="fixed inset-0 z-[70] bg-stone-900/50 backdrop-blur-[2px] opacity-0 pointer-events-none transition-opacity duration-200 flex items-center justify-center p-4">
         <div id="settings-modal-card"
-            class="w-full max-w-sm bg-[#faf9f5] border-[3px] border-stone-900 rounded-2xl shadow-[6px_6px_0px_0px_#292524] font-mono scale-95 transition-transform duration-200 overflow-hidden">
+            class="w-full max-w-sm min-h-[400px] max-h-[88vh] min-w-[600px] bg-[#faf9f5] border-[3px] border-stone-900 rounded-2xl shadow-[6px_6px_0px_0px_#292524] font-mono scale-95 transition-transform duration-200 overflow-hidden flex flex-col">
 
-            <div class="flex items-center justify-between px-5 py-4 border-b-[3px] border-stone-900 bg-stone-100">
+            <div
+                class="flex items-center justify-between px-5 py-4 border-b-[3px] border-stone-900 bg-stone-100 shrink-0">
                 <h3 class="text-sm font-black text-stone-800 flex items-center gap-2">⚙️ Tùy chỉnh sơ đồ lớp</h3>
                 <button id="btn-close-settings" type="button"
                     class="w-7 h-7 flex items-center justify-center rounded-full border-2 border-stone-800 bg-white hover:bg-rose-50 hover:border-rose-500 hover:text-rose-600 text-stone-700 text-xs font-black transition cursor-pointer">✕</button>
             </div>
 
-            <div class="p-5 space-y-4">
-                <label
-                    class="flex items-center justify-between gap-3 cursor-pointer select-none bg-white border-2 border-stone-800 rounded-xl px-3 py-2.5 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)]">
-                    <span class="text-xs font-bold text-stone-700">Tự động tính số hàng theo sĩ số</span>
-                    <input type="checkbox" id="chk-auto-rows" class="w-4 h-4 accent-emerald-600 cursor-pointer">
-                </label>
+            <div class="p-5 space-y-4 overflow-y-auto">
 
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-[11px] font-bold text-stone-500 uppercase tracking-wide mb-1">Số tổ
-                            (cột)</label>
-                        <input type="number" id="input-total-blocks" min="1" max="12"
-                            class="w-full border-2 border-stone-800 rounded-lg px-2 py-1.5 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <!-- ===== NHÓM 1: KÍCH THƯỚC SƠ ĐỒ ===== -->
+                <div class="settings-section">
+                    <p class="settings-section-title">📐 Kích thước sơ đồ</p>
+
+                    <label
+                        class="flex items-center justify-between gap-3 cursor-pointer select-none bg-white border-2 border-stone-800 rounded-xl px-3 py-2.5 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] mb-3">
+                        <span class="text-xs font-bold text-stone-700">Tự động tính số hàng theo sĩ số</span>
+                        <input type="checkbox" id="chk-auto-rows" class="w-4 h-4 accent-emerald-600 cursor-pointer">
+                    </label>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-bold text-stone-500 uppercase tracking-wide mb-1">Số
+                                tổ (cột)</label>
+                            <input type="number" id="input-total-blocks" min="1" max="12"
+                                class="w-full border-2 border-stone-800 rounded-lg px-2 py-1.5 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-stone-500 uppercase tracking-wide mb-1">Số
+                                hàng</label>
+                            <input type="number" id="input-total-rows" min="1" max="30"
+                                class="w-full border-2 border-stone-800 rounded-lg px-2 py-1.5 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-stone-100 disabled:text-stone-400">
+                        </div>
                     </div>
+                </div>
+
+                <!-- ===== NHÓM 2: ĐÁNH SỐ MÃ CHỖ NGỒI ===== -->
+                <div class="settings-section">
+                    <p class="settings-section-title">🔢 Cách đánh số mã chỗ ngồi</p>
+
+                    <div class="mb-2.5">
+                        <label class="block text-[11px] font-bold text-stone-500 uppercase tracking-wide mb-1.5">Góc
+                            bắt đầu — nơi mang số 1</label>
+                        <div class="grid grid-cols-2 gap-2" id="seat-corner-picker">
+                            <button type="button" data-corner="tl" onclick="setSeatCornerOption('tl')"
+                                class="seat-option-btn">
+                                <span class="corner-icon"><i class="dot dot-tl"></i></span>
+                                <span>Trên · Trái</span>
+                            </button>
+                            <button type="button" data-corner="tr" onclick="setSeatCornerOption('tr')"
+                                class="seat-option-btn">
+                                <span class="corner-icon"><i class="dot dot-tr"></i></span>
+                                <span>Trên · Phải</span>
+                            </button>
+                            <button type="button" data-corner="bl" onclick="setSeatCornerOption('bl')"
+                                class="seat-option-btn">
+                                <span class="corner-icon"><i class="dot dot-bl"></i></span>
+                                <span>Dưới · Trái</span>
+                            </button>
+                            <button type="button" data-corner="br" onclick="setSeatCornerOption('br')"
+                                class="seat-option-btn">
+                                <span class="corner-icon"><i class="dot dot-br"></i></span>
+                                <span>Dưới · Phải</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-2.5">
+                        <label class="block text-[11px] font-bold text-stone-500 uppercase tracking-wide mb-1.5">Hướng
+                            chạy số</label>
+                        <div class="grid grid-cols-2 gap-2" id="seat-direction-picker">
+                            <button type="button" data-direction="horizontal"
+                                onclick="setSeatDirectionOption('horizontal')" class="seat-option-btn">
+                                <span class="direction-icon">↔</span>
+                                <span>Ngang trước</span>
+                            </button>
+                            <button type="button" data-direction="vertical" onclick="setSeatDirectionOption('vertical')"
+                                class="seat-option-btn">
+                                <span class="direction-icon">↕</span>
+                                <span>Dọc trước</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <label
+                        class="flex items-center justify-between gap-3 cursor-pointer select-none bg-white border-2 border-stone-800 rounded-xl px-3 py-2.5 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] mb-3">
+                        <span class="text-xs font-bold text-stone-700">🐍 Kiểu rắn (zigzac)</span>
+                        <input type="checkbox" id="chk-seat-snake" class="w-4 h-4 accent-emerald-600 cursor-pointer">
+                    </label>
+
                     <div>
-                        <label class="block text-[11px] font-bold text-stone-500 uppercase tracking-wide mb-1">Số
-                            hàng</label>
-                        <input type="number" id="input-total-rows" min="1" max="30"
-                            class="w-full border-2 border-stone-800 rounded-lg px-2 py-1.5 text-sm font-bold text-center focus:outline-none focus:ring-2 focus:ring-emerald-400 disabled:bg-stone-100 disabled:text-stone-400">
+                        <label class="block text-[11px] font-bold text-stone-500 uppercase tracking-wide mb-1.5">👁️
+                            Xem trước thứ tự</label>
+                        <div id="seat-preview-grid"
+                            class="grid gap-[5px] bg-white border-2 border-stone-800 rounded-xl p-2.5 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)]">
+                        </div>
                     </div>
                 </div>
 
@@ -705,7 +858,7 @@
                 </div>
             </div>
 
-            <div class="flex gap-2 px-5 pb-5">
+            <div class="flex gap-2 px-5 py-4 border-t-2 border-stone-200 bg-[#faf9f5] shrink-0">
                 <button id="btn-cancel-settings" type="button"
                     class="flex-1 bg-white hover:bg-stone-50 text-stone-800 border-2 border-stone-800 text-xs font-bold py-2.5 rounded-xl shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none">Hủy</button>
                 <button id="btn-apply-settings" type="button"
@@ -716,12 +869,14 @@
     </div>
 
     <!-- ============ MODAL: TRỢ GIÚP & BẢNG PHÍM TẮT ============ -->
+
     <div id="help-backdrop"
         class="fixed inset-0 z-[80] bg-stone-900/50 backdrop-blur-[2px] flex items-center justify-center p-4">
         <div id="help-card"
             class="w-full max-w-lg bg-[#faf9f5] border-[3px] border-stone-900 rounded-2xl shadow-[6px_6px_0px_0px_#292524] font-mono overflow-hidden max-h-[85vh] flex flex-col">
 
-            <div class="flex items-center justify-between px-5 py-4 border-b-[3px] border-stone-900 bg-stone-100 shrink-0">
+            <div
+                class="flex items-center justify-between px-5 py-4 border-b-[3px] border-stone-900 bg-stone-100 shrink-0">
                 <h3 class="text-sm font-black text-stone-800 flex items-center gap-2">⌨️ Trợ giúp &amp; Phím tắt</h3>
                 <button id="btn-close-help" type="button"
                     class="w-7 h-7 flex items-center justify-center rounded-full border-2 border-stone-800 bg-white hover:bg-rose-50 hover:border-rose-500 hover:text-rose-600 text-stone-700 text-xs font-black transition cursor-pointer">✕</button>
@@ -730,7 +885,8 @@
             <div class="p-5 space-y-5 overflow-y-auto">
                 <button type="button" id="btn-replay-onboarding"
                     class="w-full flex items-center justify-between gap-3 bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-600 text-emerald-800 rounded-xl px-4 py-3 shadow-[2px_2px_0px_0px_rgba(5,150,105,0.3)] transition cursor-pointer">
-                    <span class="text-xs font-black flex items-center gap-2">🚀 Xem lại hướng dẫn dùng thử ban đầu</span>
+                    <span class="text-xs font-black flex items-center gap-2">🚀 Xem lại hướng dẫn dùng thử ban
+                        đầu</span>
                     <span class="text-sm">›</span>
                 </button>
 
@@ -791,7 +947,10 @@
                             </div>
                         </div>
                         <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">Khóa nhanh một
-                                bàn</span><kbd class="key-chip">Ctrl</kbd>+Click</div>
+                                bàn</span>
+                            <div class="flex gap-1"><kbd class="key-chip">Ctrl</kbd><kbd class="key-chip">Click</kbd>
+                            </div>
+                        </div>
                         <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">Đóng cửa sổ / menu
                                 đang mở</span><kbd class="key-chip">Esc</kbd></div>
                         <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">Mở bảng phím tắt
@@ -816,7 +975,8 @@
                     qua ✕</button>
             </div>
 
-            <div id="onboarding-body" class="px-6 pt-7 pb-4 text-center min-h-[280px] flex flex-col items-center justify-center">
+            <div id="onboarding-body"
+                class="px-6 pt-7 pb-4 text-center min-h-[280px] flex flex-col items-center justify-center">
                 <!-- Nội dung bước hiện tại được render bằng JS -->
             </div>
 
@@ -902,6 +1062,21 @@
         let autoRows = true;
         let manualRows = 5; // giá trị số hàng khi người dùng tắt chế độ tự động
 
+        // --- TÙY CHỈNH CÁCH ĐÁNH SỐ THỨ TỰ CHỖ NGỒI (mã "Chỗ N") ---
+        // seatStartCorner: góc bắt đầu đánh số = 1 -> 'tl' (trên-trái) | 'tr' (trên-phải)
+        //                  | 'bl' (dưới-trái) | 'br' (dưới-phải, mặc định cũ)
+        // seatDirection:   'horizontal' -> chạy hết theo HÀNG (ngang) rồi mới sang hàng kế tiếp
+        //                  'vertical'   -> chạy hết theo CỘT (dọc) rồi mới sang cột kế tiếp
+        // seatSnake:       true -> kiểu "rắn" (zigzac), đảo chiều mỗi dòng/cột kế tiếp (mặc định cũ)
+        //                  false -> kiểu "đánh máy", luôn quay về đầu dòng/cột như cũ
+        let seatStartCorner = 'br';
+        let seatDirection = 'horizontal';
+        let seatSnake = true;
+        // Trạng thái tạm khi modal cài đặt đang mở (chỉ ghi đè biến thật lúc bấm Áp dụng)
+        let tempSeatStartCorner = seatStartCorner;
+        let tempSeatDirection = seatDirection;
+        let tempSeatSnake = seatSnake;
+
         // ===================== TRUE RANDOM ENGINE (nâng cấp độ ngẫu nhiên) =====================
         // Thay vì chỉ dùng Math.random() (thuật toán giả ngẫu nhiên chu kỳ ngắn, dễ lặp mẫu),
         // engine này ưu tiên Web Crypto API (window.crypto.getRandomValues) - nguồn ngẫu nhiên
@@ -942,24 +1117,45 @@
         const contextMenu = document.getElementById('custom-context-menu');
         const lblAvailableSeats = document.getElementById('lbl-available-seats');
 
-        // Tính số thứ tự bàn theo kiểu "rắn zigzac":
-        // - Bắt đầu từ bàn dưới cùng, ngoài cùng bên PHẢI = số 1
-        // - Đi ngược lên trên hết cột đó, rồi vòng sang cột liền kề bên trái
-        //   và đảo chiều (đi xuống), cứ thế nối tiếp như đường rắn cho tới bàn
-        //   trên cùng, ngoài cùng bên trái.
+        // Tính số thứ tự chỗ ngồi, có thể tùy chỉnh trong modal Cài đặt:
+        // - seatStartCorner: chỗ số 1 nằm ở góc nào (trên-trái / trên-phải / dưới-trái / dưới-phải)
+        // - seatDirection:   'horizontal' = chạy hết theo HÀNG (ngang) rồi mới xuống/lên hàng kế tiếp
+        //                    'vertical'   = chạy hết theo CỘT (dọc) rồi mới sang cột kế tiếp
+        // - seatSnake:       true = kiểu "rắn" (zigzac), đảo chiều liên tục mỗi dòng/cột
+        //                    false = kiểu "đánh máy", luôn quay về đầu dòng/cột như cũ
+        // Mặc định (br + horizontal + snake) giữ nguyên hành vi gốc: bắt đầu từ bàn dưới
+        // cùng, ngoài cùng bên PHẢI = số 1, chạy zigzac lên trên.
         // Mỗi "tổ" (block) có 2 bàn xếp cạnh nhau (s=1 trái, s=2 phải trong tổ đó).
         function getSeatSerialNumber(b, r, s) {
             const totalCols = totalBlocks * 2;
-            // Vị trí cột tính từ trái sang phải và phải sang trái
-            const colIndex = (b - 1) * 2 + s;
-            const colFromRight = totalCols - colIndex + 1;
-            // Vị trí hàng tính từ DƯỚI lên TRÊN (1 là hàng dưới cùng, 2 là hàng trên nó...)
-            const rowFromBottom = totalRows - r + 1;
-            // Nếu là hàng số 1, 3, 5... (tính từ dưới lên): chạy từ PHẢI sang TRÁI
-            // Nếu là hàng số 2, 4, 6... (tính từ dưới lên): chạy từ TRÁI sang PHẢI
-            const posInRow = (rowFromBottom % 2 === 1) ? colFromRight : colIndex;
-            // Tính số serial
-            return (rowFromBottom - 1) * totalCols + posInRow;
+            const colIndex = (b - 1) * 2 + s; // 1..totalCols, tính từ TRÁI sang PHẢI
+            const rowIndex = r;               // 1..totalRows, tính từ TRÊN xuống DƯỚI
+
+            // Quy đổi cột/hàng theo góc bắt đầu đã chọn, sao cho "1" luôn nằm sát góc đó
+            const colFromStart = (seatStartCorner === 'tl' || seatStartCorner === 'bl')
+                ? colIndex : (totalCols - colIndex + 1);
+            const rowFromStart = (seatStartCorner === 'tl' || seatStartCorner === 'tr')
+                ? rowIndex : (totalRows - rowIndex + 1);
+
+            let lineIndex, posInLine, lineLength;
+            if (seatDirection === 'vertical') {
+                // Mỗi CỘT là 1 "dòng", chạy hết dọc cột rồi mới sang cột kế tiếp
+                lineIndex = colFromStart;
+                posInLine = rowFromStart;
+                lineLength = totalRows;
+            } else {
+                // Mỗi HÀNG là 1 "dòng", chạy hết ngang hàng rồi mới sang hàng kế tiếp
+                lineIndex = rowFromStart;
+                posInLine = colFromStart;
+                lineLength = totalCols;
+            }
+
+            // Kiểu rắn: các dòng chẵn (2, 4, 6...) chạy ngược chiều lại
+            if (seatSnake && lineIndex % 2 === 0) {
+                posInLine = lineLength - posInLine + 1;
+            }
+
+            return (lineIndex - 1) * lineLength + posInLine;
         }
 
         // --- HỆ ICON SVG THỐNG NHẤT (Lucide, stroke-width 3) ---
@@ -967,42 +1163,6 @@
         // Dùng inline SVG (KHÔNG dùng web-font/emoji) vì emoji sẽ MẤT khi xuất ảnh PNG
         // bằng html-to-image, còn SVG là DOM thật nên luôn bị chụp lại đầy đủ.
         // Path data lấy từ lucide-static v0.487.0 (ISC license).
-        const ICON_PATHS = {
-            'book-open': '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
-            'users': '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
-            'hourglass': '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
-            'refresh-cw': '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
-            'shuffle': '<path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/>',
-            'arrow-left-right': '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
-            'search': '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
-            'trash-2': '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/>',
-            'layout-grid': '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
-            'target': '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
-            'camera': '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
-            'image': '<rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
-            'crown': '<path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z"/><path d="M5 21h14"/>',
-            'shield': '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
-            'book-marked': '<path d="M10 2v8l3-3 3 3V2"/><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/>',
-            'flag': '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>',
-            'pen-line': '<path d="M12 20h9"/><path d="M16.376 3.622a1 1 0 0 1 3.002 3.002L7.368 18.635a2 2 0 0 1-.855.506l-2.872.838a.5.5 0 0 1-.62-.62l.838-2.872a2 2 0 0 1 .506-.854z"/>',
-            'graduation-cap': '<path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z"/><path d="M22 10v6"/><path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
-            'presentation': '<path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/>',
-            'dices': '<rect width="12" height="12" x="2" y="10" rx="2" ry="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/><path d="M15 6h.01"/><path d="M18 9h.01"/>',
-            'loader': '<path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/>',
-            'zap': '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
-            'grip-vertical': '<circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/>',
-            'sparkles': '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/><path d="M4 17v2"/><path d="M5 18H3"/>'
-        };
-
-        // Sinh chuỗi SVG inline cho icon. name: key trong ICON_PATHS.
-        // sizeClass: class Tailwind cho kích thước, vd "w-4 h-4" (mặc định w-4 h-4).
-        // spin: true -> icon xoay (cho trạng thái loading).
-        function iconSvg(name, sizeClass = 'w-4 h-4', spin = false) {
-            const inner = ICON_PATHS[name] || ICON_PATHS['loader'];
-            const spinCls = spin ? ' ic-spin' : '';
-            return `<span class="ic ${sizeClass}${spinCls}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">${inner}</svg></span>`;
-        }
-
         // Bảng metadata chức vụ: icon + màu badge. Dùng chung cho cả UI tương tác
         // và khung ảnh xuất (clone) -> luôn đồng bộ, sửa 1 nơi là đổi cả 2.
         const OFFICER_META = {
@@ -1052,7 +1212,10 @@
                 studentList: txtStudents.value,
                 totalBlocks: totalBlocks,
                 autoRows: autoRows,
-                manualRows: manualRows
+                manualRows: manualRows,
+                seatStartCorner: seatStartCorner,
+                seatDirection: seatDirection,
+                seatSnake: seatSnake
             };
             localStorage.setItem('retroClassData', JSON.stringify(dataToSave));
         }
@@ -1075,6 +1238,18 @@
                 if (typeof parsed.manualRows === 'number') {
                     manualRows = parsed.manualRows;
                 }
+                if (['tl', 'tr', 'bl', 'br'].includes(parsed.seatStartCorner)) {
+                    seatStartCorner = parsed.seatStartCorner;
+                }
+                if (parsed.seatDirection === 'horizontal' || parsed.seatDirection === 'vertical') {
+                    seatDirection = parsed.seatDirection;
+                }
+                if (typeof parsed.seatSnake === 'boolean') {
+                    seatSnake = parsed.seatSnake;
+                }
+                tempSeatStartCorner = seatStartCorner;
+                tempSeatDirection = seatDirection;
+                tempSeatSnake = seatSnake;
             }
         }
 
@@ -1206,7 +1381,7 @@
             {
                 emoji: '📋',
                 title: 'Bước 1: Nhập danh sách học sinh',
-                desc: 'Dán tên học sinh (mỗi dòng 1 tên) vào ô bên trái, rồi bấm "🔄 Đồng bộ danh sách mới". Danh sách sẽ hiện ở "Hàng đợi kéo thả".'
+                desc: 'Dán tên học sinh (mỗi dòng 1 tên) vào ô bên trái, rồi bấm "Đồng bộ danh sách mới". Danh sách sẽ hiện ở "Hàng đợi kéo thả".'
             },
             {
                 emoji: '🖱️',
@@ -1404,6 +1579,10 @@
             });
             document.getElementById('input-total-blocks').addEventListener('input', updateSettingsPreview);
             document.getElementById('input-total-rows').addEventListener('input', updateSettingsPreview);
+            document.getElementById('chk-seat-snake').addEventListener('change', (e) => {
+                tempSeatSnake = e.target.checked;
+                renderSeatPreview();
+            });
             document.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape') closeSettingsModal();
             });
@@ -1627,12 +1806,80 @@
             }
         }
 
+        // --- CÁC HÀM CHỌN GÓC BẮT ĐẦU / HƯỚNG CHẠY CHO MÃ CHỖ NGỒI ---
+        // Lưu vào biến TẠM (temp...) - chỉ áp dụng thật khi bấm nút "Áp dụng" trong modal.
+        function setSeatCornerOption(corner) {
+            tempSeatStartCorner = corner;
+            document.querySelectorAll('#seat-corner-picker .seat-option-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.corner === corner);
+            });
+            renderSeatPreview();
+        }
+
+        function setSeatDirectionOption(direction) {
+            tempSeatDirection = direction;
+            document.querySelectorAll('#seat-direction-picker .seat-option-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.direction === direction);
+            });
+            renderSeatPreview();
+        }
+
+        // Ô lưới thu nhỏ minh hoạ (6 cột x 4 hàng = 24 ô) để người dùng thấy TRỰC QUAN
+        // thứ tự đánh số sẽ ra sao trước khi bấm Áp dụng, dùng chung công thức với
+        // getSeatSerialNumber() nhưng nhận tham số riêng (không đụng vào lưới thật).
+        function computeSeatSerialPreview(colIndex, rowIndex, cols, rows, corner, direction, snake) {
+            const colFromStart = (corner === 'tl' || corner === 'bl') ? colIndex : (cols - colIndex + 1);
+            const rowFromStart = (corner === 'tl' || corner === 'tr') ? rowIndex : (rows - rowIndex + 1);
+
+            let lineIndex, posInLine, lineLength;
+            if (direction === 'vertical') {
+                lineIndex = colFromStart;
+                posInLine = rowFromStart;
+                lineLength = rows;
+            } else {
+                lineIndex = rowFromStart;
+                posInLine = colFromStart;
+                lineLength = cols;
+            }
+            if (snake && lineIndex % 2 === 0) {
+                posInLine = lineLength - posInLine + 1;
+            }
+            return (lineIndex - 1) * lineLength + posInLine;
+        }
+
+        function renderSeatPreview() {
+            const container = document.getElementById('seat-preview-grid');
+            if (!container) return;
+            const PREVIEW_COLS = 6;
+            const PREVIEW_ROWS = 5;
+            container.style.gridTemplateColumns = `repeat(${PREVIEW_COLS}, minmax(0, 1fr))`;
+            container.innerHTML = '';
+            for (let r = 1; r <= PREVIEW_ROWS; r++) {
+                for (let c = 1; c <= PREVIEW_COLS; c++) {
+                    const num = computeSeatSerialPreview(c, r, PREVIEW_COLS, PREVIEW_ROWS, tempSeatStartCorner, tempSeatDirection, tempSeatSnake);
+                    const cell = document.createElement('div');
+                    cell.className = 'seat-preview-cell';
+                    cell.innerText = num;
+                    container.appendChild(cell);
+                }
+            }
+        }
+
         function openSettingsModal() {
             document.getElementById('input-total-blocks').value = totalBlocks;
             document.getElementById('input-total-rows').value = autoRows ? totalRows : manualRows;
             document.getElementById('chk-auto-rows').checked = autoRows;
             document.getElementById('input-total-rows').disabled = autoRows;
             updateSettingsPreview();
+
+            // Nạp lại trạng thái tạm từ cài đặt đang áp dụng, rồi tô sáng nút tương ứng
+            tempSeatStartCorner = seatStartCorner;
+            tempSeatDirection = seatDirection;
+            tempSeatSnake = seatSnake;
+            setSeatCornerOption(seatStartCorner);
+            setSeatDirectionOption(seatDirection);
+            document.getElementById('chk-seat-snake').checked = seatSnake;
+            renderSeatPreview();
 
             const backdrop = document.getElementById('settings-modal-backdrop');
             const card = document.getElementById('settings-modal-card');
@@ -1691,6 +1938,12 @@
             totalBlocks = newBlocks;
             autoRows = autoChecked;
             if (!autoChecked) manualRows = newRows;
+
+            // Áp dụng cách đánh số mã chỗ ngồi đã chọn (góc bắt đầu / hướng chạy / kiểu rắn)
+            seatStartCorner = tempSeatStartCorner;
+            seatDirection = tempSeatDirection;
+            seatSnake = document.getElementById('chk-seat-snake').checked;
+            tempSeatSnake = seatSnake;
 
             initLoadAndSync(false);
             closeSettingsModal();
@@ -2089,10 +2342,18 @@
 
         function scrollElementIntoContainer(el, container) {
             if (!el || !container) return;
+
             const elRect = el.getBoundingClientRect();
             const containerRect = container.getBoundingClientRect();
-            const offset = (elRect.top + elRect.height / 2) - (containerRect.top + containerRect.height / 2);
-            container.scrollBy({ top: offset, behavior: 'smooth' });
+
+            if (elRect.bottom > containerRect.bottom) {
+                const offset = (elRect.bottom - containerRect.bottom) + 100; // Thêm 20px dưới lề
+                container.scrollBy({ top: offset, behavior: 'smooth' });
+            }
+            else if (elRect.top < containerRect.top) {
+                const offset = (elRect.top - containerRect.top) - 50; // Chừa 20px trên lề
+                container.scrollBy({ top: offset, behavior: 'smooth' });
+            }
         }
 
         function runPremiumNeonScanProcess(studentName, emptyKeys, actionButton) {
@@ -2134,7 +2395,7 @@
 
                 let currentKey;
                 let nextDelay;
-                let offsets = [-2, -1, 0, 1, 2];
+                let offsets = [-2, -1, 1, 2];
                 let randomOffset = offsets[trueRandomInt(offsets.length)];
 
                 currentIdx = (currentIdx + randomOffset + emptyKeys.length) % emptyKeys.length;
@@ -2145,7 +2406,7 @@
                 }
                 else if (progress >= 0.5 && progress < 0.9) {
                     const fakeIdx = emptyKeys.indexOf(fakeChosenKey);
-                    let fakeOffsets = [-2, -1, 0, 1, 2];
+                    let fakeOffsets = [-2, -1, 1, 2];
                     let targetIdx = fakeIdx + fakeOffsets[trueRandomInt(fakeOffsets.length)];
                     targetIdx = Math.max(0, Math.min(emptyKeys.length - 1, targetIdx));
 
