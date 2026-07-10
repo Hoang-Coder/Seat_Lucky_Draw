@@ -293,6 +293,123 @@
                 transform: rotate(360deg);
             }
         }
+
+        /* ============ ONBOARDING TOUR + BẢNG PHÍM TẮT + NÚT TRỢ GIÚP ============ */
+        #onboarding-backdrop,
+        #help-backdrop {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s ease;
+        }
+
+        #onboarding-backdrop.is-open,
+        #help-backdrop.is-open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #onboarding-card,
+        #help-card {
+            transform: scale(.95) translateY(6px);
+            transition: transform .22s cubic-bezier(.34, 1.56, .64, 1);
+        }
+
+        #onboarding-backdrop.is-open #onboarding-card,
+        #help-backdrop.is-open #help-card {
+            transform: scale(1) translateY(0);
+        }
+
+        .onb-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #d6d3d1;
+            border: 2px solid #292524;
+            transition: all .2s ease;
+        }
+
+        .onb-dot.active {
+            width: 22px;
+            border-radius: 999px;
+            background: #059669;
+        }
+
+        @keyframes onbPopIn {
+            0% {
+                opacity: 0;
+                transform: scale(.8) rotate(-4deg);
+            }
+
+            100% {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+        }
+
+        .onb-emoji-pop {
+            animation: onbPopIn .35s cubic-bezier(.34, 1.56, .64, 1);
+        }
+
+        kbd.key-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            padding: 2px 7px;
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: 800;
+            color: #292524;
+            background: #f5f5f4;
+            border: 2px solid #292524;
+            border-radius: 6px;
+            box-shadow: 1.5px 1.5px 0px 0px rgba(41, 37, 36, 1);
+        }
+
+        #btn-help-float {
+            box-shadow: 3px 3px 0px 0px rgba(41, 37, 36, 1);
+            transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease;
+        }
+
+        #btn-help-float:hover {
+            transform: translate(-2px, -2px) rotate(-4deg);
+            box-shadow: 5px 5px 0px 0px rgba(41, 37, 36, 1);
+        }
+
+        #btn-help-float:active {
+            transform: translate(1px, 1px);
+            box-shadow: 1px 1px 0px 0px rgba(41, 37, 36, 1);
+        }
+
+        @keyframes helpPulseRing {
+            0% {
+                box-shadow: 0 0 0 0 rgba(5, 150, 105, .55);
+            }
+
+            100% {
+                box-shadow: 0 0 0 10px rgba(5, 150, 105, 0);
+            }
+        }
+
+        #btn-help-float.pulse-ring {
+            animation: helpPulseRing 1.6s ease-out infinite;
+        }
+
+        .shortcut-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 10px;
+            background: #fff;
+            border: 2px solid #e7e5e4;
+        }
+
+        .shortcut-row:hover {
+            border-color: #292524;
+            background: #fafaf9;
+        }
     </style>
 </head>
 
@@ -314,7 +431,7 @@
 
             <div class="space-y-3 mb-5 flex flex-col">
                 <div class="flex justify-between items-center">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-stone-700">📋 Danh sách hiện tại</h3>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-stone-700">📋 Sĩ số hiện tại</h3>
                     <span id="student-count"
                         class="text-xs bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded font-mono font-bold">0
                         HS</span>
@@ -333,11 +450,11 @@
                     class="text-xs font-bold uppercase tracking-wider text-stone-700 mb-2 flex justify-between items-center">
                     <span>⏳ HÀNG ĐỢI KÉO THẢ</span>
                     <div class="flex gap-1">
-                        <button id="btn-shuffle-queue" title="Xáo trộn ngẫu nhiên hàng đợi"
+                        <button id="btn-shuffle-queue" title="Xáo trộn ngẫu nhiên hàng đợi (Alt+X)"
                             class="text-[10px] bg-white hover:bg-stone-100 text-stone-800 font-bold px-1.5 py-0.5 rounded border border-stone-800 shadow-[1px_1px_0px_0px_rgba(41,37,36,1)] transition active:translate-y-0.5 active:shadow-none cursor-pointer">
                             🔀 Trộn
                         </button>
-                        <button id="btn-reverse-queue" title="Đảo ngược thứ tự hàng đợi"
+                        <button id="btn-reverse-queue" title="Đảo ngược thứ tự hàng đợi (Alt+V)"
                             class="text-[10px] bg-white hover:bg-stone-100 text-stone-800 font-bold px-1.5 py-0.5 rounded border border-stone-800 shadow-[1px_1px_0px_0px_rgba(41,37,36,1)] transition active:translate-y-0.5 active:shadow-none cursor-pointer">
                             🔄 Đảo
                         </button>
@@ -345,7 +462,7 @@
                 </h3>
 
                 <div class="mb-2 relative">
-                    <input type="text" id="search-waiting"
+                    <input type="text" id="search-waiting" title="Mẹo: nhấn Alt+F để focus nhanh vào ô này"
                         class="w-full bg-white border-2 border-stone-400 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-stone-800 placeholder:text-stone-400 font-sans shadow-sm"
                         placeholder="🔍 Tìm nhanh học sinh trong hàng đợi...">
                 </div>
@@ -357,6 +474,7 @@
 
             <div class="hidden md:block text-[10px] text-stone-400 font-medium mt-4 text-center leading-relaxed">
                 Mẹo: Giữ Ctrl + Click vào ô để Khóa bàn hỏng<br>
+                Nhấn phím <b>"?"</b> để xem toàn bộ phím tắt ẩn
             </div>
         </aside>
 
@@ -365,9 +483,13 @@
                 class="min-h-16 border-b border-stone-200 bg-white px-4 md:px-6 py-4 flex items-center justify-between shrink-0 gap-3">
                 <div class="flex items-center gap-3 min-w-0">
                     <button type="button" id="btn-toggle-sidebar" onclick="toggleSidebar()"
-                        title="Thu gọn / Mở rộng thanh bên"
+                        title="Thu gọn / Mở rộng thanh bên (Alt+B)"
                         class="hidden md:flex shrink-0 items-center justify-center w-8 h-8 rounded-lg border-2 border-stone-800 bg-white hover:bg-stone-100 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] active:translate-y-0.5 active:shadow-none transition cursor-pointer text-sm">
                         ⟨⟨
+                    </button>
+                    <button type="button" id="btn-open-help" title="Trợ giúp & Phím tắt (nhấn ?)"
+                        class="hidden md:flex shrink-0 items-center justify-center w-8 h-8 rounded-lg border-2 border-stone-800 bg-white hover:bg-emerald-50 hover:text-emerald-700 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] active:translate-y-0.5 active:shadow-none transition cursor-pointer text-sm font-black">
+                        ⌨
                     </button>
                     <div class="flex flex-col min-w-0">
                         <span class="text-[10px] text-stone-400 uppercase font-mono tracking-widest">Sơ đồ vị trí ngồi
@@ -424,35 +546,42 @@
                     <div id="classroom-grid" class="w-full max-w-7xl grid gap-[clamp(10px,1.5vw,24px)] p-1"></div>
                 </div>
 
-                <div class="w-full max-w-7xl mt-12 mb-20 shrink-0">
-                    <div id="board-teacher-row" class="relative grid grid-cols-12 gap-4 group"></div>
+                <div class="w-full max-w-7xl mt-12 mb-20 grid grid-cols-12 gap-4 shrink-0">
+                    <div
+                        class="col-span-8 bg-stone-800 text-amber-50 border-2 border-stone-950 font-bold py-3.5 text-center rounded-xl shadow-[4px_4px_0px_0px_rgba(120,113,108,0.3)] tracking-widest text-xs select-none uppercase font-serif">
+                        🌿 BẢNG ĐEN LỚP HỌC
+                    </div>
+                    <div
+                        class="col-span-4 bg-amber-100/80 border-2 border-dashed border-amber-800 text-amber-900 font-bold py-3.5 text-center rounded-xl text-xs select-none uppercase">
+                        👩‍🏫 BÀN GIÁO VIÊN
+                    </div>
                 </div>
 
                 <div class="fixed bottom-6 z-50 w-full px-6 flex justify-center pointer-events-none">
                     <div
                         class="bg-[#faf9f5] border-[3px] border-stone-900 rounded-2xl p-3 shadow-[2px_2px_0px_1px_#C0C0C0] flex flex-row flex-wrap sm:flex-nowrap items-center justify-center gap-2 pointer-events-auto w-max mx-auto">
 
-                        <button id="btn-reset"
+                        <button id="btn-reset" title="Xóa toàn bộ vị trí đã xếp (Alt+R)"
                             class="bg-red-600/70 hover:bg-red-500/80 text-white border-2 border-stone-900 text-xs font-bold py-2 px-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none whitespace-nowrap">
                             🗑️ <span class="hidden sm:inline ml-1">Xóa</span>
                         </button>
 
-                        <button id="btn-random-all"
+                        <button id="btn-random-all" title="Xếp tự động toàn bộ lớp (Alt+A)"
                             class="bg-white hover:bg-amber-50 text-stone-800 border-2 border-stone-800 text-xs font-bold py-2 px-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none whitespace-nowrap">
                             🚀 <span class="hidden sm:inline ml-1">Tự Động</span>
                         </button>
 
-                        <button id="btn-lucky-draw"
+                        <button id="btn-lucky-draw" title="Quay vị trí ngẫu nhiên (Space)"
                             class="bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-black py-2 px-4 sm:px-6 rounded-xl border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition tracking-wide cursor-pointer active:translate-y-0.5 active:shadow-none whitespace-nowrap">
                             🎯 <span class="hidden sm:inline ml-1">QUAY VỊ TRÍ</span>
                         </button>
 
                         <button id="btn-settings"
                             class="bg-white hover:bg-amber-50 text-stone-800 border-2 border-stone-800 text-xs font-bold py-2 px-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none whitespace-nowrap"
-                            title="Tùy chỉnh sơ đồ lớp (số hàng, số cột)">
+                            title="Tùy chỉnh sơ đồ lớp - số hàng, số cột (Alt+S)">
                             ⚙️ <span class="hidden sm:inline ml-1">Cài Đặt</span>
                         </button>
-                        <button id="btn-export-png"
+                        <button id="btn-export-png" title="Xuất ảnh sơ đồ lớp (Alt+E)"
                             class="bg-teal-700 hover:bg-teal-600 text-white font-bold text-xs py-2 px-3 rounded-xl border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none whitespace-nowrap">
                             📸 <span class="hidden sm:inline ml-1">Lưu</span>
                         </button>
@@ -466,6 +595,11 @@
 
     </div>
 
+    <!-- NÚT TRỢ GIÚP NỔI: mở bảng phím tắt + cho phép xem lại hướng dẫn dùng thử -->
+    <button type="button" id="btn-help-float" title="Trợ giúp & Phím tắt (nhấn ?)"
+        class="pulse-ring fixed bottom-6 right-6 z-40 w-11 h-11 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-lg font-black border-2 border-stone-900 flex items-center justify-center cursor-pointer">
+        ❔
+    </button>
 
     <div id="custom-context-menu"
         class=" absolute z-50 w-56 bg-[#faf9f5] border-[3px] border-stone-900 rounded-2xl overflow-hidden shadow-[6px_6px_0px_0px_#292524] font-mono">
@@ -581,6 +715,125 @@
         </div>
     </div>
 
+    <!-- ============ MODAL: TRỢ GIÚP & BẢNG PHÍM TẮT ============ -->
+    <div id="help-backdrop"
+        class="fixed inset-0 z-[80] bg-stone-900/50 backdrop-blur-[2px] flex items-center justify-center p-4">
+        <div id="help-card"
+            class="w-full max-w-lg bg-[#faf9f5] border-[3px] border-stone-900 rounded-2xl shadow-[6px_6px_0px_0px_#292524] font-mono overflow-hidden max-h-[85vh] flex flex-col">
+
+            <div class="flex items-center justify-between px-5 py-4 border-b-[3px] border-stone-900 bg-stone-100 shrink-0">
+                <h3 class="text-sm font-black text-stone-800 flex items-center gap-2">⌨️ Trợ giúp &amp; Phím tắt</h3>
+                <button id="btn-close-help" type="button"
+                    class="w-7 h-7 flex items-center justify-center rounded-full border-2 border-stone-800 bg-white hover:bg-rose-50 hover:border-rose-500 hover:text-rose-600 text-stone-700 text-xs font-black transition cursor-pointer">✕</button>
+            </div>
+
+            <div class="p-5 space-y-5 overflow-y-auto">
+                <button type="button" id="btn-replay-onboarding"
+                    class="w-full flex items-center justify-between gap-3 bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-600 text-emerald-800 rounded-xl px-4 py-3 shadow-[2px_2px_0px_0px_rgba(5,150,105,0.3)] transition cursor-pointer">
+                    <span class="text-xs font-black flex items-center gap-2">🚀 Xem lại hướng dẫn dùng thử ban đầu</span>
+                    <span class="text-sm">›</span>
+                </button>
+
+                <div>
+                    <h4 class="text-[11px] font-black uppercase tracking-wider text-stone-500 mb-2">🎬 Thao tác chính
+                    </h4>
+                    <div class="space-y-1.5">
+                        <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">🎯 Quay vị trí ngẫu
+                                nhiên</span><kbd class="key-chip">Space</kbd></div>
+                        <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">🚀 Xếp tự động toàn bộ
+                                lớp</span>
+                            <div class="flex gap-1"><kbd class="key-chip">Alt</kbd><kbd class="key-chip">A</kbd></div>
+                        </div>
+                        <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">📸 Xuất ảnh sơ đồ
+                                lớp</span>
+                            <div class="flex gap-1"><kbd class="key-chip">Alt</kbd><kbd class="key-chip">E</kbd></div>
+                        </div>
+                        <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">⚙️ Mở Cài đặt sơ
+                                đồ</span>
+                            <div class="flex gap-1"><kbd class="key-chip">Alt</kbd><kbd class="key-chip">S</kbd></div>
+                        </div>
+                        <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">🗑️ Xóa toàn bộ vị
+                                trí</span>
+                            <div class="flex gap-1"><kbd class="key-chip">Alt</kbd><kbd class="key-chip">R</kbd></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-[11px] font-black uppercase tracking-wider text-stone-500 mb-2">⏳ Hàng đợi &amp;
+                        thanh bên</h4>
+                    <div class="space-y-1.5">
+                        <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">🔀 Xáo trộn hàng
+                                đợi</span>
+                            <div class="flex gap-1"><kbd class="key-chip">Alt</kbd><kbd class="key-chip">X</kbd></div>
+                        </div>
+                        <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">🔄 Đảo ngược hàng
+                                đợi</span>
+                            <div class="flex gap-1"><kbd class="key-chip">Alt</kbd><kbd class="key-chip">V</kbd></div>
+                        </div>
+                        <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">🔍 Tìm nhanh học
+                                sinh</span>
+                            <div class="flex gap-1"><kbd class="key-chip">Alt</kbd><kbd class="key-chip">F</kbd></div>
+                        </div>
+                        <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">⟨⟨ Thu gọn / Mở rộng
+                                thanh bên</span>
+                            <div class="flex gap-1"><kbd class="key-chip">Alt</kbd><kbd class="key-chip">B</kbd></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="text-[11px] font-black uppercase tracking-wider text-stone-500 mb-2">🧭 Sơ đồ lớp</h4>
+                    <div class="space-y-1.5">
+                        <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">Dịch chuyển Tổ / Dãy
+                                bàn</span>
+                            <div class="flex gap-1"><kbd class="key-chip">Shift</kbd><kbd class="key-chip">↑↓←→</kbd>
+                            </div>
+                        </div>
+                        <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">Khóa nhanh một
+                                bàn</span><kbd class="key-chip">Ctrl</kbd>+Click</div>
+                        <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">Đóng cửa sổ / menu
+                                đang mở</span><kbd class="key-chip">Esc</kbd></div>
+                        <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">Mở bảng phím tắt
+                                này</span><kbd class="key-chip">?</kbd></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MODAL: ONBOARDING - HƯỚNG DẪN DÙNG THỬ CHO NGƯỜI MỚI ============ -->
+    <div id="onboarding-backdrop"
+        class="fixed inset-0 z-[90] bg-stone-900/60 backdrop-blur-[2px] flex items-center justify-center p-4">
+        <div id="onboarding-card"
+            class="w-full max-w-md bg-[#faf9f5] border-[3px] border-stone-900 rounded-2xl shadow-[8px_8px_0px_0px_#292524] font-mono overflow-hidden">
+
+            <div class="flex items-center justify-between px-5 py-3 border-b-[3px] border-stone-900 bg-stone-100">
+                <h3 class="text-xs font-black text-stone-800 flex items-center gap-2">📖 Chào mừng đến EduTool Smart
+                </h3>
+                <button id="btn-skip-onboarding" type="button"
+                    class="text-[11px] font-bold text-stone-500 hover:text-rose-600 transition cursor-pointer">Bỏ
+                    qua ✕</button>
+            </div>
+
+            <div id="onboarding-body" class="px-6 pt-7 pb-4 text-center min-h-[280px] flex flex-col items-center justify-center">
+                <!-- Nội dung bước hiện tại được render bằng JS -->
+            </div>
+
+            <div class="px-5 pb-5 pt-1">
+                <div id="onboarding-dots" class="flex items-center justify-center gap-1.5 mb-4"></div>
+                <div class="flex gap-2">
+                    <button id="btn-onboarding-back" type="button"
+                        class="flex-1 bg-white hover:bg-stone-50 text-stone-800 border-2 border-stone-800 text-xs font-bold py-2.5 rounded-xl shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none disabled:opacity-30 disabled:cursor-not-allowed">‹
+                        Quay lại</button>
+                    <button id="btn-onboarding-next" type="button"
+                        class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black py-2.5 rounded-xl border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none">Tiếp
+                        theo ›</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="max-w-7xl mx-auto my-12 px-4 select-none">
         <div
             class="border-2 border-stone-800 bg-amber-50/40 p-4 rounded-xl mb-4 shadow-[4px_4px_0px_0px_rgba(41,37,36,1)] flex items-center justify-between">
@@ -620,7 +873,16 @@
 
                     <div id="classroom-clone-grid" class="w-full grid gap-6 p-1"></div>
 
-                    <div class="w-full grid grid-cols-12 gap-4" id="classroom-clone-board-row"></div>
+                    <div class="w-full grid grid-cols-12 gap-4">
+                        <div
+                            class="col-span-8 bg-stone-800 text-amber-50 border-2 border-stone-950 font-bold py-3.5 text-center rounded-xl shadow-[4px_4px_0px_0px_rgba(120,113,108,0.3)] tracking-widest text-xs uppercase font-serif">
+                            🌿 BẢNG ĐEN LỚP HỌC
+                        </div>
+                        <div
+                            class="col-span-4 bg-amber-100/80 border-2 border-dashed border-amber-800 text-amber-900 font-bold py-3.5 text-center rounded-xl text-xs uppercase">
+                            👩‍🏫 BÀN GIÁO VIÊN
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -639,7 +901,6 @@
         // Khi false -> dùng totalRows do người dùng chọn trong modal cài đặt.
         let autoRows = true;
         let manualRows = 5; // giá trị số hàng khi người dùng tắt chế độ tự động
-        let boardOnLeft = true; // true: Bảng đen bên trái - Bàn giáo viên bên phải (mặc định); false: đảo ngược
 
         // ===================== TRUE RANDOM ENGINE (nâng cấp độ ngẫu nhiên) =====================
         // Thay vì chỉ dùng Math.random() (thuật toán giả ngẫu nhiên chu kỳ ngắn, dễ lặp mẫu),
@@ -680,105 +941,6 @@
         const lblTotalSeats = document.getElementById('lbl-total-seats');
         const contextMenu = document.getElementById('custom-context-menu');
         const lblAvailableSeats = document.getElementById('lbl-available-seats');
-
-        // ===================== KÉO-THẢ ĐỔI VỊ TRÍ BẢNG ĐEN ⇄ BÀN GIÁO VIÊN =====================
-        // Vẽ lại 2 khối "Bảng đen lớp học" và "Bàn giáo viên" theo trạng thái boardOnLeft,
-        // đồng thời gắn sự kiện kéo-thả (desktop) và nút hoán đổi nhanh (hỗ trợ cảm ứng/mobile).
-        function renderBoardTeacherRow() {
-            const container = document.getElementById('board-teacher-row');
-            if (!container) return;
-
-            const boardBlockHtml = `
-                <div id="block-board" draggable="true"
-                    class="col-span-8 bg-stone-800 text-amber-50 border-2 border-stone-950 font-bold py-3.5 text-center rounded-xl shadow-[4px_4px_0px_0px_rgba(120,113,108,0.3)] tracking-widest text-xs select-none uppercase font-serif cursor-grab active:cursor-grabbing transition hover:brightness-110"
-                    title="Kéo thả để đổi vị trí với Bàn giáo viên">
-                    🌿 BẢNG ĐEN LỚP HỌC
-                </div>`;
-
-            const teacherBlockHtml = `
-                <div id="block-teacher" draggable="true"
-                    class="col-span-4 bg-amber-100/80 border-2 border-dashed border-amber-800 text-amber-900 font-bold py-3.5 text-center rounded-xl text-xs select-none uppercase cursor-grab active:cursor-grabbing transition hover:brightness-105"
-                    title="Kéo thả để đổi vị trí với Bảng đen">
-                    👩‍🏫 BÀN GIÁO VIÊN
-                </div>`;
-
-            const leftClass = boardOnLeft ? 'left-2/3' : 'left-1/3';
-            container.innerHTML = (boardOnLeft ? (boardBlockHtml + teacherBlockHtml) : (teacherBlockHtml + boardBlockHtml)) + `
-                <button type="button" id="btn-swap-board-teacher" title="Đổi vị trí Bảng đen ⇄ Bàn giáo viên"
-                    class="absolute ${leftClass} top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white border-2 border-stone-800 shadow-[2px_2px_0px_0px_#292524] flex items-center justify-center text-stone-700 hover:bg-emerald-50 hover:border-emerald-600 hover:text-emerald-700 hover:scale-110 cursor-pointer transition opacity-0 group-hover:opacity-100">
-                    <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M8 3 4 7l4 4" />
-                        <path d="M4 7h16" />
-                        <path d="M16 21l4-4-4-4" />
-                        <path d="M20 17H4" />
-                    </svg>
-                </button>`;
-
-            document.getElementById('btn-swap-board-teacher').addEventListener('click', swapBoardTeacherPosition);
-            attachBoardTeacherDragEvents();
-        }
-
-        function swapBoardTeacherPosition() {
-            boardOnLeft = !boardOnLeft;
-            renderBoardTeacherRow();
-            updateClassroomCloneView();
-            saveToLocalStorage();
-
-            requestAnimationFrame(() => {
-                document.querySelectorAll('#block-board, #block-teacher').forEach(el => {
-                    el.classList.add('cell-shift-pulse');
-                    el.addEventListener('animationend', () => el.classList.remove('cell-shift-pulse'), { once: true });
-                });
-            });
-        }
-
-        function attachBoardTeacherDragEvents() {
-            const blocks = document.querySelectorAll('#block-board, #block-teacher');
-            blocks.forEach(block => {
-                block.addEventListener('dragstart', (e) => {
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('text/plain', block.id);
-                    setTimeout(() => block.classList.add('opacity-40'), 0);
-                });
-                block.addEventListener('dragend', () => {
-                    block.classList.remove('opacity-40');
-                });
-                block.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    block.classList.add('ring-4', 'ring-emerald-400');
-                });
-                block.addEventListener('dragleave', () => {
-                    block.classList.remove('ring-4', 'ring-emerald-400');
-                });
-                block.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    block.classList.remove('ring-4', 'ring-emerald-400');
-                    const draggedId = e.dataTransfer.getData('text/plain');
-                    if (draggedId && draggedId !== block.id) {
-                        swapBoardTeacherPosition();
-                    }
-                });
-            });
-        }
-
-        // Vẽ khối Bảng đen / Bàn giáo viên trong bản xem trước dùng để xuất ảnh (đồng bộ với trạng thái hiện tại)
-        function renderCloneBoardTeacherRow() {
-            const cloneRow = document.getElementById('classroom-clone-board-row');
-            if (!cloneRow) return;
-
-            const boardBlockHtml = `
-                <div class="col-span-8 bg-stone-800 text-amber-50 border-2 border-stone-950 font-bold py-3.5 text-center rounded-xl shadow-[4px_4px_0px_0px_rgba(120,113,108,0.3)] tracking-widest text-xs uppercase font-serif">
-                    🌿 BẢNG ĐEN LỚP HỌC
-                </div>`;
-            const teacherBlockHtml = `
-                <div class="col-span-4 bg-amber-100/80 border-2 border-dashed border-amber-800 text-amber-900 font-bold py-3.5 text-center rounded-xl text-xs uppercase">
-                    👩‍🏫 BÀN GIÁO VIÊN
-                </div>`;
-
-            cloneRow.innerHTML = boardOnLeft ? (boardBlockHtml + teacherBlockHtml) : (teacherBlockHtml + boardBlockHtml);
-        }
-        // ========================================================================================
 
         // Tính số thứ tự bàn theo kiểu "rắn zigzac":
         // - Bắt đầu từ bàn dưới cùng, ngoài cùng bên PHẢI = số 1
@@ -890,8 +1052,7 @@
                 studentList: txtStudents.value,
                 totalBlocks: totalBlocks,
                 autoRows: autoRows,
-                manualRows: manualRows,
-                boardOnLeft: boardOnLeft
+                manualRows: manualRows
             };
             localStorage.setItem('retroClassData', JSON.stringify(dataToSave));
         }
@@ -914,9 +1075,262 @@
                 if (typeof parsed.manualRows === 'number') {
                     manualRows = parsed.manualRows;
                 }
-                if (typeof parsed.boardOnLeft === 'boolean') {
-                    boardOnLeft = parsed.boardOnLeft;
+            }
+        }
+
+        // ============================================================
+        // ===============  MODAL TRỢ GIÚP & PHÍM TẮT ẨN  ===============
+        // ============================================================
+        function openHelpModal() {
+            document.getElementById('help-backdrop').classList.add('is-open');
+            document.getElementById('btn-help-float').classList.remove('pulse-ring');
+        }
+
+        function closeHelpModal() {
+            document.getElementById('help-backdrop').classList.remove('is-open');
+        }
+
+        function isAnyModalOpen() {
+            return document.getElementById('help-backdrop').classList.contains('is-open') ||
+                document.getElementById('onboarding-backdrop').classList.contains('is-open') ||
+                document.getElementById('settings-modal-backdrop').classList.contains('opacity-100');
+        }
+
+        function initHelpAndShortcuts() {
+            document.getElementById('btn-open-help').addEventListener('click', openHelpModal);
+            document.getElementById('btn-help-float').addEventListener('click', openHelpModal);
+            document.getElementById('btn-close-help').addEventListener('click', closeHelpModal);
+            document.getElementById('help-backdrop').addEventListener('click', (e) => {
+                if (e.target.id === 'help-backdrop') closeHelpModal();
+            });
+            document.getElementById('btn-replay-onboarding').addEventListener('click', () => {
+                closeHelpModal();
+                openOnboardingTour(true);
+            });
+
+            // --- HỆ THỐNG PHÍM TẮT ẨN: giúp thao tác nhanh mà không cần rê chuột ---
+            // Không hiển thị lộ liễu trên giao diện chính (chỉ gợi ý trong bảng "?" / title),
+            // giữ giao diện gọn gàng, trực quan cho người mới trong khi vẫn "mở khóa" tốc độ
+            // thao tác cho người dùng quen thuộc.
+            document.addEventListener('keydown', (e) => {
+                const isTyping = e.target.tagName === 'INPUT' ||
+                    e.target.tagName === 'TEXTAREA' ||
+                    e.target.isContentEditable;
+
+                // Phím "?" (Shift + /) mở bảng trợ giúp - cho phép ngay cả khi không gõ liệu
+                if (!isTyping && (e.key === '?' || (e.shiftKey && e.key === '/'))) {
+                    e.preventDefault();
+                    if (document.getElementById('help-backdrop').classList.contains('is-open')) {
+                        closeHelpModal();
+                    } else {
+                        openHelpModal();
+                    }
+                    return;
                 }
+
+                // Esc: đóng bất kỳ lớp phủ nào đang mở (trợ giúp / onboarding / menu chuột phải)
+                if (e.key === 'Escape') {
+                    closeHelpModal();
+                    closeOnboardingTour();
+                    hideContextMenu();
+                    return;
+                }
+
+                if (isTyping || isWaveAnimating) return;
+
+                // Các tổ hợp phím dùng Alt để tránh xung đột với trình duyệt / gõ tiếng Việt
+                if (e.altKey && !e.ctrlKey && !e.metaKey) {
+                    const key = e.key.toLowerCase();
+                    switch (key) {
+                        case 'a': // Alt+A: Xếp tự động toàn bộ lớp
+                            e.preventDefault();
+                            document.getElementById('btn-random-all').click();
+                            break;
+                        case 'e': // Alt+E: Xuất ảnh sơ đồ (E = Export)
+                            e.preventDefault();
+                            document.getElementById('btn-export-png').click();
+                            break;
+                        case 's': // Alt+S: Mở Cài đặt sơ đồ
+                            e.preventDefault();
+                            document.getElementById('btn-settings').click();
+                            break;
+                        case 'r': // Alt+R: Xóa (reset) toàn bộ vị trí
+                            e.preventDefault();
+                            document.getElementById('btn-reset').click();
+                            break;
+                        case 'x': // Alt+X: Xáo trộn hàng đợi
+                            e.preventDefault();
+                            document.getElementById('btn-shuffle-queue').click();
+                            break;
+                        case 'v': // Alt+V: Đảo ngược hàng đợi
+                            e.preventDefault();
+                            document.getElementById('btn-reverse-queue').click();
+                            break;
+                        case 'b': // Alt+B: Thu gọn / mở rộng thanh bên
+                            e.preventDefault();
+                            toggleSidebar();
+                            break;
+                        case 'f': { // Alt+F: focus nhanh vào ô tìm kiếm hàng đợi
+                            e.preventDefault();
+                            const searchInput = document.getElementById('search-waiting');
+                            if (searchInput) { searchInput.focus(); searchInput.select(); }
+                            break;
+                        }
+                    }
+                    return;
+                }
+
+                // Shift + phím mũi tên: dịch chuyển Tổ / Dãy bàn (dùng lại hàm shiftClassroom có sẵn)
+                if (e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey) {
+                    const arrowMap = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' };
+                    if (arrowMap[e.key]) {
+                        e.preventDefault();
+                        shiftClassroom(arrowMap[e.key]);
+                    }
+                }
+            });
+        }
+
+        // ============================================================
+        // ===============  ONBOARDING TOUR CHO NGƯỜI DÙNG MỚI  =========
+        // ============================================================
+        const ONBOARDING_STORAGE_KEY = 'eduToolOnboardingSeenV1';
+        let onboardingStepIndex = 0;
+
+        const ONBOARDING_STEPS = [
+            {
+                emoji: '📖',
+                title: 'Chào mừng đến với EduTool Smart!',
+                desc: 'Công cụ giúp bạn sắp xếp chỗ ngồi cho lớp học chỉ trong vài cú nhấp chuột. Cùng xem qua vài bước nhanh để bắt đầu nhé!'
+            },
+            {
+                emoji: '📋',
+                title: 'Bước 1: Nhập danh sách học sinh',
+                desc: 'Dán tên học sinh (mỗi dòng 1 tên) vào ô bên trái, rồi bấm "🔄 Đồng bộ danh sách mới". Danh sách sẽ hiện ở "Hàng đợi kéo thả".'
+            },
+            {
+                emoji: '🖱️',
+                title: 'Bước 2: Kéo - thả hoặc xếp tự động',
+                desc: 'Kéo tên từ hàng đợi thả vào chỗ trống trên sơ đồ. Muốn nhanh hơn? Bấm "🚀 Tự Động" để hệ thống xếp toàn bộ chỉ trong tích tắc.'
+            },
+            {
+                emoji: '🎯',
+                title: 'Bước 3: Quay vị trí ngẫu nhiên',
+                desc: 'Bấm "🎯 QUAY VỊ TRÍ" (hoặc phím Space) để bốc thăm chỗ ngồi công bằng, có hiệu ứng quét vui mắt cho cả lớp cùng xem.'
+            },
+            {
+                emoji: '⚙️',
+                title: 'Bước 4: Tùy chỉnh & xuất ảnh',
+                desc: 'Vào "⚙️ Cài Đặt" để chỉnh số tổ/số hàng theo ý muốn. Khi hoàn tất, bấm "📸 Lưu" để xuất sơ đồ thành ảnh PNG đẹp mắt.'
+            },
+            {
+                title: 'Bước 5: Khóa nhanh bàn hỏng',
+                desc: 'Giữ phím <b>Ctrl</b> (Mac: <b>Cmd</b>) rồi bấm vào 1 ô bất kỳ trên sơ đồ để khóa bàn đó lại (dùng cho bàn hỏng, không sử dụng). Bấm Ctrl + Click thêm lần nữa vào ô đã khóa để mở khóa trở lại.',
+                visual: `
+                    <div class="flex items-center justify-center gap-3 mb-1">
+                        <div class="flex flex-col items-center gap-1">
+                            <div class="w-20 h-14 rounded-lg border-2 border-dashed border-stone-300 bg-stone-50 flex items-center justify-center text-stone-400 shadow-[2px_2px_0px_0px_rgba(41,37,36,0.15)]">
+                                <span class="text-[9px] font-black uppercase tracking-wider">Trống</span>
+                            </div>
+                            <span class="text-[9px] font-bold text-stone-400 uppercase">Bàn bình thường</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1 pb-4">
+                            <div class="flex items-center gap-1">
+                                <kbd class="key-chip">Ctrl</kbd>
+                                <span class="text-xs font-black text-stone-500">+</span>
+                                <span class="text-base">🖱️</span>
+                            </div>
+                            <span class="text-lg text-stone-400">→</span>
+                        </div>
+                        <div class="flex flex-col items-center gap-1">
+                            <div class="w-20 h-14 rounded-lg border-2 border-dashed border-rose-400 bg-rose-50 bg-[linear-gradient(45deg,#ffe4e6_25%,transparent_25%,transparent_50%,#ffe4e6_50%,#ffe4e6_75%,transparent_75%,transparent)] bg-[size:8px_8px] flex items-center justify-center text-rose-600 shadow-[2px_2px_0px_0px_rgba(190,18,60,0.25)]">
+                                <span class="text-[10px] font-black uppercase tracking-wide">🔒 Khóa</span>
+                            </div>
+                            <span class="text-[9px] font-bold text-rose-500 uppercase">Bàn đã khóa</span>
+                        </div>
+                    </div>
+                `
+            },
+            {
+                emoji: '⌨️',
+                title: 'Mẹo: Phím tắt cho người dùng nhanh tay',
+                desc: 'Nhấn phím "?" bất cứ lúc nào để mở bảng phím tắt đầy đủ. Ví dụ: Alt+A xếp tự động, Alt+E xuất ảnh, Shift+Mũi tên để dịch chuyển tổ bàn.'
+            }
+        ];
+
+        function renderOnboardingStep() {
+            const step = ONBOARDING_STEPS[onboardingStepIndex];
+            const body = document.getElementById('onboarding-body');
+            const visualHtml = step.visual
+                ? `<div class="onb-emoji-pop mb-4">${step.visual}</div>`
+                : `<div class="onb-emoji-pop text-6xl mb-4">${step.emoji}</div>`;
+            body.innerHTML = `
+                ${visualHtml}
+                <h4 class="text-base font-black text-stone-800 mb-2 leading-snug">${step.title}</h4>
+                <p class="text-xs text-stone-600 leading-relaxed font-sans max-w-xs">${step.desc}</p>
+            `;
+
+            const dotsWrap = document.getElementById('onboarding-dots');
+            dotsWrap.innerHTML = ONBOARDING_STEPS.map((_, i) =>
+                `<span class="onb-dot${i === onboardingStepIndex ? ' active' : ''}"></span>`
+            ).join('');
+
+            const btnBack = document.getElementById('btn-onboarding-back');
+            const btnNext = document.getElementById('btn-onboarding-next');
+            btnBack.disabled = onboardingStepIndex === 0;
+
+            const isLastStep = onboardingStepIndex === ONBOARDING_STEPS.length - 1;
+            btnNext.innerText = isLastStep ? '🚀 Bắt đầu ngay' : 'Tiếp theo ›';
+        }
+
+        function openOnboardingTour(forceReplay = false) {
+            onboardingStepIndex = 0;
+            renderOnboardingStep();
+            document.getElementById('onboarding-backdrop').classList.add('is-open');
+        }
+
+        function closeOnboardingTour() {
+            document.getElementById('onboarding-backdrop').classList.remove('is-open');
+        }
+
+        function finishOnboardingTour() {
+            localStorage.setItem(ONBOARDING_STORAGE_KEY, 'true');
+            closeOnboardingTour();
+        }
+
+        function initOnboardingTour() {
+            document.getElementById('btn-onboarding-next').addEventListener('click', () => {
+                if (onboardingStepIndex < ONBOARDING_STEPS.length - 1) {
+                    onboardingStepIndex++;
+                    renderOnboardingStep();
+                } else {
+                    finishOnboardingTour();
+                }
+            });
+
+            document.getElementById('btn-onboarding-back').addEventListener('click', () => {
+                if (onboardingStepIndex > 0) {
+                    onboardingStepIndex--;
+                    renderOnboardingStep();
+                }
+            });
+
+            document.getElementById('btn-skip-onboarding').addEventListener('click', finishOnboardingTour);
+
+            document.getElementById('onboarding-backdrop').addEventListener('click', (e) => {
+                if (e.target.id === 'onboarding-backdrop') finishOnboardingTour();
+            });
+
+            // Tự động hiện Onboarding cho MỌI người dùng lần đầu (dựa hoàn toàn vào việc
+            // trình duyệt này đã từng xem/bỏ qua hướng dẫn hay chưa - lưu trong localStorage).
+            // Không phụ thuộc vào việc đã có dữ liệu lớp học cũ hay không, để đảm bảo người
+            // mới luôn thấy được hướng dẫn khi mở trang lần đầu tiên.
+            const hasSeenOnboarding = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+            if (!hasSeenOnboarding) {
+                setTimeout(() => openOnboardingTour(), 600);
+            } else {
+                // Người dùng cũ: giữ hiệu ứng nhấp nháy nhẹ ở nút trợ giúp để họ biết có phím tắt
+                document.getElementById('btn-help-float').classList.add('pulse-ring');
             }
         }
 
@@ -927,7 +1341,6 @@
 
             loadFromLocalStorage();
             initLoadAndSync(true);
-            renderBoardTeacherRow();
 
             // Đóng context menu khi click ra ngoài
             document.addEventListener("click", (e) => { if (!contextMenu.contains(e.target)) { hideContextMenu(); } });
@@ -1034,6 +1447,10 @@
                     }
                 }
             });
+
+            // --- KHỞI TẠO: TRỢ GIÚP / PHÍM TẮT / ONBOARDING CHO NGƯỜI DÙNG MỚI ---
+            initHelpAndShortcuts();
+            initOnboardingTour();
         });
 
         // --- LOGIC CONTEXT MENU ---
@@ -1717,7 +2134,7 @@
 
                 let currentKey;
                 let nextDelay;
-                let offsets = [-2, -1, 1, 2];
+                let offsets = [-2, -1, 0, 1, 2];
                 let randomOffset = offsets[trueRandomInt(offsets.length)];
 
                 currentIdx = (currentIdx + randomOffset + emptyKeys.length) % emptyKeys.length;
@@ -1728,7 +2145,7 @@
                 }
                 else if (progress >= 0.5 && progress < 0.9) {
                     const fakeIdx = emptyKeys.indexOf(fakeChosenKey);
-                    let fakeOffsets = [-2, -1, 1, 2];
+                    let fakeOffsets = [-2, -1, 0, 1, 2];
                     let targetIdx = fakeIdx + fakeOffsets[trueRandomInt(fakeOffsets.length)];
                     targetIdx = Math.max(0, Math.min(emptyKeys.length - 1, targetIdx));
 
@@ -1980,7 +2397,6 @@
         `;
             }
             cloneGrid.innerHTML = gridBlocksHtml;
-            renderCloneBoardTeacherRow();
 
             // Auto-fit: co giãn khối nội dung sao cho vừa vặn trong khung cố định 19:10
             // rồi căn giữa -> đảm bảo không bị cắt, ảnh xuất ra luôn tỷ lệ 19:10.
