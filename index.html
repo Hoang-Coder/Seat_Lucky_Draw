@@ -1010,12 +1010,12 @@
             class="w-full overflow-x-auto border-2 border-stone-800 rounded-2xl shadow-[8px_8px_0px_0px_rgba(41,37,36,1)] bg-[#fcfbf7]">
             <!-- KHUNG ẢNH CỐ ĐỊNH TỶ LỆ 19:10 (1520 x 800) -->
             <div id="classroom-clone-container"
-                style="width: 1520px; height: 800px; background-color: #fcfbf7; overflow: hidden;"
+                style="width: 1584px; height: auto; background-color: #fcfbf7; overflow: hidden;"
                 class="mx-auto flex items-center justify-center font-sans antialiased text-stone-800 box-border shrink-0">
 
                 <!-- NỘI DUNG: được co giãn + căn giữa để vừa vặn trong khung 19:10 -->
                 <div id="classroom-clone-content" style="width: 1520px; transform-origin: center center;"
-                    class="flex flex-col items-center justify-center gap-6 p-10 box-border">
+                    class="flex flex-col items-center justify-center gap-5 box-border">
 
                     <div
                         class="w-full bg-white px-6 py-4 flex items-center justify-between rounded-xl border-2 border-stone-800 shadow-[4px_4px_0px_0px_rgba(41,37,36,1)]">
@@ -2671,16 +2671,23 @@
             const content = document.getElementById('classroom-clone-content');
             if (!frame || !content) return;
 
-            const FRAME_W = 1520;
-            const FRAME_H = 800;
+            const CONTENT_W = 1520;
+            const MARGIN = 80; // viền margin trắng an toàn quanh nội dung khi in ra giấy
+            // Chiều cao tối đa của nội dung trước khi phải thu nhỏ (tránh ảnh quá dài với lớp đông)
+            const MAX_CONTENT_H = 1000;
 
             // Reset tạm thời để đo chiều cao thật của nội dung
             content.style.transform = 'scale(1)';
             const naturalH = content.offsetHeight;
 
-            // Nếu nội dung cao hơn khung -> thu nhỏ; ngược lại giữ nguyên (tránh phóng to mờ)
-            const scale = naturalH > FRAME_H ? FRAME_H / naturalH : 1;
+            // Nếu nội dung cao hơn giới hạn -> thu nhỏ; ngược lại giữ nguyên kích thước thật (không phóng to mờ)
+            const scale = naturalH > MAX_CONTENT_H ? MAX_CONTENT_H / naturalH : 1;
             content.style.transform = `scale(${scale})`;
+
+            // Khung ôm sát nội dung + cộng thêm viền margin cố định hai bên -> ảnh xuất luôn có viền đẹp
+            const finalH = Math.round(naturalH * scale);
+            frame.style.width = (CONTENT_W + MARGIN * 2) + 'px';
+            frame.style.height = (finalH + MARGIN * 2) + 'px';
         }
 
         // Khi cửa sổ thay đổi kích thước, tính lại scale để xem trước luôn khớp khung
