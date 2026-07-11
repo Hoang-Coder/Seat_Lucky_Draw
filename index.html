@@ -24,6 +24,45 @@
             overscroll-behavior: none;
         }
 
+        /* ====== FIX HIỂN THỊ/THAO TÁC TRÊN ĐIỆN THOẠI (< md = 768px) ======
+           Bản gốc dùng layout "1 màn hình cố định" (h-screen + overflow:hidden)
+           và ép các vùng con tự cuộn riêng. Trên di động, khi sidebar xếp chồng
+           lên trên (flex-col), tổng chiều cao nội dung vượt quá 100vh khiến
+           phần sơ đồ lớp bị cắt mất mà không cách nào cuộn xuống được.
+           => Ở mobile: cho phép cả trang cuộn dọc bình thường, tắt việc ép
+           chiều cao cố định, đồng thời khoá cuộn ngang để tránh vỡ layout. */
+        @media (max-width: 767px) {
+
+            html,
+            body {
+                height: auto;
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+
+            #app-shell {
+                height: auto;
+                min-height: 100vh;
+                min-height: 100dvh;
+                overflow: visible;
+            }
+
+            #sidebarPanel {
+                max-height: none;
+                overflow: visible;
+            }
+
+            #main-content {
+                overflow: visible;
+            }
+
+            #classroom-viewport {
+                overflow-x: auto;
+                overflow-y: visible;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
         /* Cuộn mượt hơn trên Safari/trackpad cho vùng nội dung chính */
         @keyframes cellShiftPulse {
             0% {
@@ -498,7 +537,7 @@
 
 <body class="bg-[#fcfbf7] text-stone-800 min-h-screen font-sans antialiased selection:bg-emerald-200">
 
-    <div class="flex flex-col md:flex-row h-screen w-full overflow-hidden">
+    <div id="app-shell" class="flex flex-col md:flex-row h-screen w-full overflow-hidden">
 
         <aside id="sidebarPanel"
             class="w-full md:w-64 lg:w-72 xl:w-80 md:h-full bg-amber-50/40 border-b md:border-b-0 md:border-r-2 border-stone-800 flex flex-col p-5 shrink-0 z-20 overflow-y-auto overflow-x-hidden overscroll-contain transition-all duration-300 ease-in-out">
@@ -524,7 +563,7 @@
                     placeholder="Nhập tên học sinh, mỗi dòng một tên..."></textarea>
                 <button id="btn-load-students"
                     class="w-full text-xs bg-stone-800 hover:bg-stone-700 text-white font-bold py-2.5 rounded-xl border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none">
-                    ĐỒNG BỘ DANH SÁCH MỚI
+                    ĐỒNG BỘ DANH SÁCH
                 </button>
             </div>
 
@@ -557,6 +596,7 @@
 
             <div class="hidden md:block text-[10px] text-stone-400 font-medium mt-4 text-center leading-relaxed">
                 Mẹo: Giữ Ctrl + Click vào ô để Khóa bàn hỏng<br>
+                Mẹo: Chuột phải vào học sinh để Ghim / Bỏ ghim chỗ ngồi<br>
             </div>
         </aside>
 
@@ -734,6 +774,13 @@
 
         <div class="border-t-[3px] border-stone-900"></div>
 
+        <button type="button" id="context-pin-btn" class="menu-item" onclick="toggleSeatPin()">
+            <span class="dot bg-amber-500"></span>
+            <span id="context-pin-label">📌 Ghim vào chỗ</span>
+        </button>
+
+        <div class="border-t-[3px] border-stone-900"></div>
+
         <button type="button" id="context-delete-btn" class="delete-btn" onclick="kickStudentFromMenu()">
             🗑 Xóa khỏi bàn
         </button>
@@ -744,7 +791,7 @@
     <div id="settings-modal-backdrop"
         class="fixed inset-0 z-[70] bg-stone-900/50 backdrop-blur-[2px] opacity-0 pointer-events-none transition-opacity duration-200 flex items-center justify-center p-4">
         <div id="settings-modal-card"
-            class="w-full max-w-sm min-h-[400px] max-h-[88vh] min-w-[600px] bg-[#faf9f5] border-[3px] border-stone-900 rounded-2xl shadow-[6px_6px_0px_0px_#292524] font-mono scale-95 transition-transform duration-200 overflow-hidden flex flex-col">
+            class="w-[min(600px,92vw)] min-h-[400px] max-h-[88vh] bg-[#faf9f5] border-[3px] border-stone-900 rounded-2xl shadow-[6px_6px_0px_0px_#292524] font-mono scale-95 transition-transform duration-200 overflow-hidden flex flex-col">
 
             <div
                 class="flex items-center justify-between px-5 py-4 border-b-[3px] border-stone-900 bg-stone-100 shrink-0">
@@ -950,6 +997,11 @@
                             <div class="flex gap-1"><kbd class="key-chip">Ctrl</kbd><kbd class="key-chip">Click</kbd>
                             </div>
                         </div>
+                        <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">Ghim / Bỏ ghim học
+                                sinh vào chỗ</span>
+                            <div class="flex gap-1"><kbd class="key-chip">Chuột phải</kbd>
+                            </div>
+                        </div>
                         <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">Đóng cửa sổ / menu
                                 đang mở</span><kbd class="key-chip">Esc</kbd></div>
                         <div class="shortcut-row"><span class="font-bold text-stone-700 text-xs">Mở bảng phím tắt
@@ -993,7 +1045,7 @@
         </div>
     </div>
 
-    <div class="max-w-7xl mx-auto my-12 px-4 select-none">
+    <div class="max-w-7xl mx-auto my-12 px-4 select-none" style="position:absolute; left:-99999px; top:0; pointer-events:none;" aria-hidden="true">
         <div
             class="border-2 border-stone-800 bg-amber-50/40 p-4 rounded-xl mb-4 shadow-[4px_4px_0px_0px_rgba(41,37,36,1)] flex items-center justify-between">
             <div class="flex items-center gap-2">
@@ -1054,6 +1106,7 @@
         let totalRows = 5;
         let classroomData = {};
         let officerData = {}; // Lưu trữ chức vụ: { "Hoàng Kỳ Anh": "Lớp trưởng" }
+        let pinnedSeats = {}; // Lưu các chỗ ngồi đang bị ghim: { "b1-r1-s1": true } -> học sinh ở đó sẽ không bị xáo trộn khi Tự Động / Quay vị trí
         let isWaveAnimating = false;
         let currentMenuTargetKey = null; // Lưu vị trí ô đang được chuột phải
         // Tùy chỉnh sơ đồ: khi autoRows = true -> số hàng tự tính theo sĩ số (mặc định cũ).
@@ -1068,7 +1121,7 @@
         //                  'vertical'   -> chạy hết theo CỘT (dọc) rồi mới sang cột kế tiếp
         // seatSnake:       true -> kiểu "rắn" (zigzac), đảo chiều mỗi dòng/cột kế tiếp (mặc định cũ)
         //                  false -> kiểu "đánh máy", luôn quay về đầu dòng/cột như cũ
-        let seatStartCorner = 'br';
+        let seatStartCorner = 'bl';
         let seatDirection = 'horizontal';
         let seatSnake = true;
         // Trạng thái tạm khi modal cài đặt đang mở (chỉ ghi đè biến thật lúc bấm Áp dụng)
@@ -1208,6 +1261,7 @@
             const dataToSave = {
                 classroomData: classroomData,
                 officerData: officerData,
+                pinnedSeats: pinnedSeats,
                 studentList: txtStudents.value,
                 totalBlocks: totalBlocks,
                 autoRows: autoRows,
@@ -1225,6 +1279,7 @@
                 const parsed = JSON.parse(savedData);
                 classroomData = parsed.classroomData || {};
                 officerData = parsed.officerData || {};
+                pinnedSeats = parsed.pinnedSeats || {};
                 if (parsed.studentList) {
                     txtStudents.value = parsed.studentList;
                 }
@@ -1612,6 +1667,7 @@
                             delete classroomData[key];
                         }
                     });
+                    pinnedSeats = {};
                     initLoadAndSync(true);
                 }
             });
@@ -1635,9 +1691,11 @@
                 const dragData = JSON.parse(rawData);
 
                 if (dragData.type === 'FROM_GRID') {
+                    if (pinnedSeats[dragData.key]) { return; } // học sinh đang được ghim, không cho kéo ra khỏi bàn
                     const studentName = classroomData[dragData.key];
                     if (studentName && studentName !== 'DISABLED') {
                         delete classroomData[dragData.key];
+                        delete pinnedSeats[dragData.key];
                         returnWaitingStudentInOriginalOrder(studentName);
                     }
                 }
@@ -1667,6 +1725,23 @@
                     officerData[studentName] = role;
                 }
                 initLoadAndSync(false);
+            }
+            hideContextMenu();
+        }
+
+        function toggleSeatPin() {
+            if (!currentMenuTargetKey) return;
+            if (currentMenuTargetKey.startsWith('waiting:')) { hideContextMenu(); return; }
+            const key = currentMenuTargetKey;
+            const studentName = classroomData[key];
+            if (studentName && studentName !== 'DISABLED') {
+                if (pinnedSeats[key]) {
+                    delete pinnedSeats[key];
+                } else {
+                    pinnedSeats[key] = true;
+                }
+                saveToLocalStorage();
+                renderClassroomGridUI();
             }
             hideContextMenu();
         }
@@ -1749,6 +1824,7 @@
                     const status = classroomData[key];
                     if (status && status !== 'DISABLED' && !currentLines.includes(status)) {
                         delete classroomData[key];
+                        delete pinnedSeats[key];
                     }
                 });
 
@@ -1945,6 +2021,7 @@
                 if (outOfBlocks || outOfRows) {
                     const status = classroomData[key];
                     delete classroomData[key];
+                    delete pinnedSeats[key];
                     if (status && status !== 'DISABLED' && !waitingStudents.includes(status)) {
                         waitingStudents.unshift(status);
                     }
@@ -2044,6 +2121,19 @@
             }
 
             classroomData = newData;
+
+            // Ghim di chuyển theo học sinh: tìm ô mới của từng học sinh đang được ghim
+            if (Object.keys(pinnedSeats).length > 0) {
+                const newPinnedSeats = {};
+                Object.keys(pinnedSeats).forEach(oldKey => {
+                    const studentName = oldData[oldKey];
+                    if (!studentName || studentName === 'DISABLED') return;
+                    const newKey = Object.keys(newData).find(k => newData[k] === studentName);
+                    if (newKey) newPinnedSeats[newKey] = true;
+                });
+                pinnedSeats = newPinnedSeats;
+            }
+
             initLoadAndSync(false);
 
             requestAnimationFrame(() => {
@@ -2074,6 +2164,13 @@
             const deleteBtn = document.getElementById('context-delete-btn');
             if (deleteBtn) deleteBtn.classList.toggle('hidden', cellKey.startsWith('waiting:'));
 
+            // Nút "Ghim vào chỗ" chỉ áp dụng cho học sinh đang ngồi ở 1 ô bàn cụ thể (không áp dụng cho hàng đợi)
+            const pinBtn = document.getElementById('context-pin-btn');
+            const pinLabel = document.getElementById('context-pin-label');
+            if (pinBtn) {
+                pinBtn.classList.toggle('hidden', cellKey.startsWith('waiting:'));
+            }
+
             document.querySelectorAll("#custom-context-menu .menu-item").forEach(btn => {
                 btn.classList.remove(
                     "bg-blue-50",
@@ -2102,6 +2199,16 @@
                 }
 
             }
+
+            // Cập nhật nhãn + kiểu hiển thị nút Ghim theo trạng thái ô đang mở menu
+            if (pinBtn && !cellKey.startsWith('waiting:')) {
+                const isPinned = !!pinnedSeats[cellKey];
+                pinLabel.textContent = isPinned ? '📍 Bỏ ghim khỏi chỗ' : '📌 Ghim vào chỗ';
+                pinBtn.classList.toggle('ring-2', isPinned);
+                pinBtn.classList.toggle('ring-stone-800', isPinned);
+                pinBtn.classList.toggle('bg-amber-50', isPinned);
+            }
+
             // Đặt tạm vị trí để đo kích thước thật của menu (menu vẫn đang opacity 0 nên đo được mà không nháy hình)
             contextMenu.style.left = e.pageX + "px";
             contextMenu.style.top = e.pageY + "px";
@@ -2189,9 +2296,13 @@
                         </div>
                     `;
                         } else {
-                            seatEl.draggable = (status && !isWaveAnimating) ? true : false;
+                            const isPinned = !!pinnedSeats[cellKey];
+                            seatEl.draggable = (status && !isWaveAnimating && !isPinned) ? true : false;
                             if (status) {
                                 seatEl.className += " bg-amber-50/20 border-stone-800 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] text-stone-800 hover:bg-amber-50/60";
+                                if (isPinned) {
+                                    seatEl.className += " ring-2 ring-amber-500 ring-offset-1";
+                                }
                                 seatEl.innerHTML = `
                             <div class="text-[9px] font-mono font-bold text-stone-400 flex justify-between items-center w-full">
                                 <span>Chỗ ${getSeatSerialNumber(b, r, s)}</span>
@@ -2201,6 +2312,7 @@
                                 ${getOfficerBadge(status)}
                                 <div class="truncate max-w-full">${getShortName(status, originalStudentsList)}</div>
                             </div>
+                            ${isPinned ? '<span class="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-amber-500 border-2 border-stone-900 flex items-center justify-center text-[10px] shadow-[1px_1px_0px_0px_rgba(41,37,36,1)]" title="Đã ghim vào chỗ">📌</span>' : ''}
                         `;
 
                                 // Sự kiện Chuột Phải để mở Context Menu
@@ -2250,6 +2362,7 @@
                             if (isWaveAnimating) return;
                             seatEl.classList.remove('drag-hover');
                             if (classroomData[cellKey] === 'DISABLED') return;
+                            if (pinnedSeats[cellKey]) return; // ô đã ghim, không cho thả đè lên
 
                             const rawData = e.dataTransfer.getData('text/plain');
                             if (!rawData) return;
@@ -2311,6 +2424,7 @@
                 if (classroomData[key]) {
                     returnWaitingStudentInOriginalOrder(classroomData[key]);
                 }
+                delete pinnedSeats[key];
                 classroomData[key] = 'DISABLED';
             }
             initLoadAndSync(false);
@@ -2320,6 +2434,7 @@
             if (classroomData[key] && classroomData[key] !== 'DISABLED') {
                 const name = classroomData[key];
                 delete classroomData[key];
+                delete pinnedSeats[key];
                 returnWaitingStudentInOriginalOrder(name);
             }
         }
@@ -2479,7 +2594,7 @@
             if (waitingStudents.length === 0) {
                 const seatedStudents = [];
                 Object.keys(classroomData).forEach(key => {
-                    if (classroomData[key] !== 'DISABLED') {
+                    if (classroomData[key] !== 'DISABLED' && !pinnedSeats[key]) {
                         seatedStudents.push(classroomData[key]);
                         delete classroomData[key];
                     }
