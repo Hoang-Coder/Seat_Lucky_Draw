@@ -549,7 +549,7 @@
                     <h2 class="text-lg font-black tracking-tight text-stone-900 ">EduTool Smart</h2>
                 </div>
                 <p class="text-[10px] text-stone-500 uppercase font-bold tracking-wider mt-0.5 ml-11">phát triển bởi kỳ
-                    anh nhớ 🤟
+                    anh nhớ ✌🏽
                 </p>
             </div>
 
@@ -616,8 +616,7 @@
                         ⌨
                     </button>
                     <div class="flex flex-col min-w-0">
-                        <span class="text-[10px] text-stone-400 uppercase font-mono tracking-widest">Sơ đồ vị trí ngồi
-                            của lớp</span>
+                        <span class="text-[10px] text-stone-400 uppercase font-mono tracking-widest">Phần mềm xếp chỗ ngồi lớp học</span>
                         <h1 class="text-base font-black text-stone-800 tracking-tight truncate"> SƠ ĐỒ LỚP HỌC THÔNG
                             MINH</h1>
                     </div>
@@ -690,10 +689,31 @@
                             🗑️ <span class="hidden sm:inline ml-1">Xóa</span>
                         </button>
 
-                        <button id="btn-random-all" title="Xếp tự động toàn bộ lớp (Alt+A)"
-                            class="bg-white hover:bg-amber-50 text-stone-800 border-2 border-stone-800 text-xs font-bold py-2 px-3 rounded-xl shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none whitespace-nowrap">
-                            🚀 <span class="hidden sm:inline ml-1">Tự Động</span>
-                        </button>
+                        <div class="relative">
+                            <div class="flex items-stretch">
+                                <button id="btn-random-all" title="Xếp tự động toàn bộ lớp (Alt+A)"
+                                    class="bg-white hover:bg-amber-50 text-stone-800 border-2 border-stone-800 border-r-0 text-xs font-bold py-2 px-3 rounded-l-xl shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none whitespace-nowrap">
+                                    🚀 <span class="hidden sm:inline ml-1">Tự Động</span>
+                                </button>
+                                <button id="btn-auto-dropdown-toggle" title="Tùy chọn xếp tự động nâng cao"
+                                    class="bg-white hover:bg-amber-50 text-stone-800 border-2 border-stone-800 text-xs font-bold py-2 px-2 rounded-r-xl shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition cursor-pointer active:translate-y-0.5 active:shadow-none">
+                                    <span id="auto-dropdown-arrow-icon" class="inline-block transition-transform duration-200">▾</span>
+                                </button>
+                            </div>
+
+                            <div id="auto-dropdown-menu"
+                                class="hidden absolute bottom-full mb-2 left-0 w-52 bg-[#faf9f5] border-2 border-stone-900 rounded-xl shadow-[3px_3px_0px_0px_rgba(41,37,36,1)] overflow-hidden z-50">
+                                <button id="auto-option-sequential"
+                                    class="w-full text-left px-3 py-2.5 text-xs font-bold text-stone-800 hover:bg-amber-100 transition flex items-center gap-2 cursor-pointer">
+                                    🔢 <span>Xếp theo thứ tự</span>
+                                </button>
+                                <div class="h-px bg-stone-300"></div>
+                                <button id="auto-option-continuous"
+                                    class="w-full text-left px-3 py-2.5 text-xs font-bold text-stone-800 hover:bg-amber-100 transition flex items-center gap-2 cursor-pointer">
+                                    ⏱️ <span>Xếp liên tục (mỗi 7 giây)</span>
+                                </button>
+                            </div>
+                        </div>
 
                         <button id="btn-lucky-draw" title="Quay vị trí ngẫu nhiên (Space)"
                             class="bg-amber-500 hover:bg-amber-400 text-stone-950 text-xs font-black py-2 px-4 sm:px-6 rounded-xl border-2 border-stone-900 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] transition tracking-wide cursor-pointer active:translate-y-0.5 active:shadow-none whitespace-nowrap">
@@ -1446,17 +1466,36 @@
                 desc: 'Kéo tên từ hàng đợi thả vào chỗ trống trên sơ đồ. Muốn nhanh hơn? Bấm "🚀 Tự Động" để hệ thống xếp toàn bộ chỉ trong tích tắc.'
             },
             {
+                emoji: '🔽',
+                title: 'Bước 3: Tùy chọn xếp tự động nâng cao',
+                desc: 'Bấm mũi tên <b>▾</b> ngay cạnh nút "🚀 Tự Động" để mở thêm 2 lựa chọn: <b>"Xếp theo thứ tự"</b> (Học sinh 1 → Vị trí 1, Học sinh 2 → Vị trí 2,...) và <b>"Xếp liên tục"</b> (tự động quay chỗ cho từng em một, cách nhau 7 giây/lượt, dừng khi hết hàng đợi hoặc hết chỗ trống).',
+                visual: `
+            <div class="flex items-center justify-center gap-2 mb-1">
+                <div class="flex items-stretch shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] rounded-xl overflow-hidden border-2 border-stone-800">
+                    <div class="bg-white text-stone-800 text-[10px] font-bold py-1.5 px-2.5 whitespace-nowrap">🚀 Tự Động</div>
+                    <div class="bg-amber-100 text-stone-800 text-[10px] font-black py-1.5 px-2 border-l-2 border-stone-800">▾</div>
+                </div>
+                <span class="text-lg text-stone-400">→</span>
+                <div class="flex flex-col rounded-xl border-2 border-stone-800 overflow-hidden shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] bg-[#faf9f5]">
+                    <div class="text-[9px] font-bold text-stone-700 px-2.5 py-1.5 whitespace-nowrap">🔢 Xếp theo thứ tự</div>
+                    <div class="h-px bg-stone-300"></div>
+                    <div class="text-[9px] font-bold text-stone-700 px-2.5 py-1.5 whitespace-nowrap">⏱️ Xếp liên tục (7s)</div>
+                </div>
+            </div>
+        `
+            },
+            {
                 emoji: '🎯',
-                title: 'Bước 3: Quay vị trí ngẫu nhiên',
+                title: 'Bước 4: Quay vị trí ngẫu nhiên',
                 desc: 'Bấm "🎯 QUAY VỊ TRÍ" (hoặc phím Space) để bốc thăm chỗ ngồi công bằng, có hiệu ứng quét vui mắt cho cả lớp cùng xem.'
             },
             {
                 emoji: '⚙️',
-                title: 'Bước 4: Tùy chỉnh & xuất ảnh',
+                title: 'Bước 5: Tùy chỉnh & xuất ảnh',
                 desc: 'Vào "⚙️ Cài Đặt" để chỉnh số tổ/số hàng theo ý muốn. Khi hoàn tất, bấm "📸 Lưu" để xuất sơ đồ thành ảnh PNG đẹp mắt.'
             },
             {
-                title: 'Bước 5: Khóa nhanh bàn hỏng',
+                title: 'Bước 6: Khóa nhanh bàn hỏng',
                 desc: 'Giữ phím <b>Ctrl</b> (Mac: <b>Cmd</b>) rồi bấm vào 1 ô bất kỳ trên sơ đồ để khóa bàn đó lại (dùng cho bàn hỏng, không sử dụng). Bấm Ctrl + Click thêm lần nữa vào ô đã khóa để mở khóa trở lại.',
                 visual: `
             <div class="flex items-center justify-center gap-3 mb-1">
@@ -1542,8 +1581,8 @@
         }
 
         function finishOnboardingTour() {
-            // THAY ĐỔI: Lưu vào Cookie thay vì localStorage, thời hạn 3 ngày
-            setCookie(ONBOARDING_STORAGE_KEY, 'true', 3);
+            // Lưu trạng thái "đã xem onboarding" vào Cookie (KHÔNG dùng localStorage), thời hạn 5 ngày
+            setCookie(ONBOARDING_STORAGE_KEY, 'true', 5); // Ghi nhớ đã xem onboarding trong 5 ngày (qua Cookie, không dùng localStorage)
             closeOnboardingTour();
         }
 
@@ -1635,6 +1674,112 @@
             });
             document.getElementById('btn-random-all').addEventListener('click', autoAssignAllClassroom);
             document.getElementById('btn-export-png').addEventListener('click', exportToPngClassroom);
+
+            // ==================================================================
+            // NÂNG CẤP NÚT "TỰ ĐỘNG": Dropdown 2 tùy chọn nâng cao
+            // 1. "Xếp theo thứ tự"  -> Học sinh 1 vào Vị trí 1, HS 2 vào Vị trí 2,...
+            // 2. "Xếp liên tục"     -> Giả lập nhấn phím Cách (Space) mỗi 7 giây/lần
+            //    cho đến khi hết hàng đợi hoặc hết chỗ trống.
+            // Không thay đổi hành vi mặc định của nút "🚀 Tự Động" (vẫn xếp ngẫu nhiên như cũ).
+            // ==================================================================
+            const autoDropdownToggleBtn = document.getElementById('btn-auto-dropdown-toggle');
+            const autoDropdownMenu = document.getElementById('auto-dropdown-menu');
+            const autoDropdownArrowIcon = document.getElementById('auto-dropdown-arrow-icon');
+            let continuousAssignIntervalId = null; // id của setInterval "Xếp liên tục"
+
+            function openAutoDropdown() {
+                autoDropdownMenu.classList.remove('hidden');
+                autoDropdownArrowIcon.style.transform = 'rotate(180deg)';
+            }
+            function closeAutoDropdown() {
+                autoDropdownMenu.classList.add('hidden');
+                autoDropdownArrowIcon.style.transform = 'rotate(0deg)';
+            }
+
+            // Bấm mũi tên: mở/đóng danh sách lựa chọn
+            autoDropdownToggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (autoDropdownMenu.classList.contains('hidden')) {
+                    openAutoDropdown();
+                } else {
+                    closeAutoDropdown();
+                }
+            });
+
+            // Bấm ra ngoài dropdown thì tự đóng lại
+            document.addEventListener('click', (e) => {
+                if (!autoDropdownMenu.classList.contains('hidden') &&
+                    !autoDropdownMenu.contains(e.target) &&
+                    e.target !== autoDropdownToggleBtn) {
+                    closeAutoDropdown();
+                }
+            });
+
+            // Nhấn Esc cũng đóng dropdown này (không ảnh hưởng các Esc-handler khác)
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !autoDropdownMenu.classList.contains('hidden')) {
+                    closeAutoDropdown();
+                }
+            });
+
+            // Dừng chế độ "Xếp liên tục" (nếu đang chạy) + khôi phục giao diện nút Quay vị trí
+            function stopContinuousAutoAssign() {
+                if (continuousAssignIntervalId) {
+                    clearInterval(continuousAssignIntervalId);
+                    continuousAssignIntervalId = null;
+                }
+            }
+
+            // Kiểm tra còn ô ghế trống hay không (tái sử dụng cùng điều kiện với các hàm xếp tự động khác)
+            function hasAnyEmptySeat() {
+                for (let b = 1; b <= totalBlocks; b++) {
+                    for (let r = 1; r <= totalRows; r++) {
+                        for (let s = 1; s <= 2; s++) {
+                            if (!classroomData[`b${b}-r${r}-s${s}`]) return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            // Tùy chọn 1: "Xếp theo thứ tự"
+            document.getElementById('auto-option-sequential').addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeAutoDropdown();
+                stopContinuousAutoAssign(); // nếu đang chạy chế độ liên tục thì dừng trước
+                if (isWaveAnimating) return;
+                autoAssignAllClassroom('sequential');
+            });
+
+            // Tùy chọn 2: "Xếp liên tục" - giả lập nhấn phím Cách mỗi 7 giây
+            document.getElementById('auto-option-continuous').addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeAutoDropdown();
+
+                // Bấm lại lần nữa trong lúc đang chạy -> dừng (bật/tắt như công tắc)
+                if (continuousAssignIntervalId) {
+                    stopContinuousAutoAssign();
+                    return;
+                }
+
+                const runOneSpacebarTick = () => {
+                    // Điều kiện dừng: hàng đợi trống hoặc không còn ô ghế trống nào
+                    if (waitingStudents.length === 0 || !hasAnyEmptySeat()) {
+                        stopContinuousAutoAssign();
+                        return;
+                    }
+                    // Tôn trọng cơ chế khóa/cooldown hiện có của phím Cách để tránh xung đột hiệu ứng
+                    if (isWaveAnimating || isCyberDrawLocked) return;
+
+                    // Giả lập sự kiện nhấn phím Cách: kích hoạt đúng hàm mà phím Cách đang gọi
+                    startCyberLuckyDrawAnimation();
+                    isCyberDrawLocked = true;
+                    setTimeout(() => { isCyberDrawLocked = false; }, 6200);
+                };
+
+                runOneSpacebarTick(); // chạy ngay lượt đầu tiên, không cần chờ 7s
+                continuousAssignIntervalId = setInterval(runOneSpacebarTick, 7000);
+            });
 
             // --- Nút cài đặt: mở thẻ nổi tùy chỉnh số hàng / số tổ (cột) ---
             document.getElementById('btn-settings').addEventListener('click', () => {
@@ -2589,7 +2734,12 @@
             requestAnimationFrame(executionTick);
         }
 
-        function autoAssignAllClassroom() {
+        function autoAssignAllClassroom(mode) {
+            // Ghi chú: hàm này được gọi từ nhiều nơi:
+            //  - Click trực tiếp nút "🚀 Tự Động" (không truyền tham số, hoặc truyền vào MouseEvent) -> chế độ NGẪU NHIÊN (mặc định, giữ nguyên hành vi cũ).
+            //  - Chọn "Xếp theo thứ tự" trong dropdown -> gọi autoAssignAllClassroom('sequential') -> xếp tuần tự HS1->Vị trí1, HS2->Vị trí2,...
+            const isSequentialMode = (mode === 'sequential');
+
             if (isWaveAnimating) return;
 
             // Nếu hàng đợi trống nhưng lớp đã có học sinh ngồi (bấm lần 2, lần 3...):
@@ -2632,9 +2782,25 @@
             isWaveAnimating = true;
             const btnRandom = document.getElementById('btn-random-all');
             btnRandom.disabled = true;
-            btnRandom.innerText = "⚡ ĐANG QUÉT SƠ ĐỒ...";
+            btnRandom.innerText = isSequentialMode ? "⚡ ĐANG XẾP THEO THỨ TỰ..." : "⚡ ĐANG QUÉT SƠ ĐỒ...";
 
-            fisherYatesShuffle(activeEmptyKeys);
+            if (!isSequentialMode) {
+                // Chế độ ngẫu nhiên (mặc định, giữ nguyên hành vi cũ): xáo trộn vị trí ghế trống trước khi xếp.
+                fisherYatesShuffle(activeEmptyKeys);
+            } else {
+                // Chế độ tuần tự: sắp xếp các ô trống theo đúng SỐ THỨ TỰ CHỖ NGỒI đang hiển thị
+                // trên sơ đồ (Chỗ 1, Chỗ 2, Chỗ 3,...) để học sinh đầu hàng đợi luôn vào đúng
+                // "Vị trí 1", học sinh kế tiếp vào "Vị trí 2",... theo thứ tự tuyến tính.
+                activeEmptyKeys.sort((keyA, keyB) => {
+                    const partsA = keyA.split('-');
+                    const partsB = keyB.split('-');
+                    const serialA = getSeatSerialNumber(
+                        parseInt(partsA[0].substring(1)), parseInt(partsA[1].substring(1)), parseInt(partsA[2].substring(1)));
+                    const serialB = getSeatSerialNumber(
+                        parseInt(partsB[0].substring(1)), parseInt(partsB[1].substring(1)), parseInt(partsB[2].substring(1)));
+                    return serialA - serialB;
+                });
+            }
 
             const fillLimit = Math.min(waitingStudents.length, activeEmptyKeys.length);
             const temporaryAssignments = [];
@@ -2711,7 +2877,7 @@
             setTimeout(() => {
                 isWaveAnimating = false;
                 btnRandom.disabled = false;
-                btnRandom.innerText = "🔁 Tự Động";
+                btnRandom.innerText = "🔀 Xếp Tự Động";
                 initLoadAndSync(false);
             }, maxOverallDelay + 300);
         }
