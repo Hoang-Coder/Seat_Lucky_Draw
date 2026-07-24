@@ -369,6 +369,75 @@
             animation: dropSettle .5s cubic-bezier(.34, 1.56, .64, 1);
         }
 
+        /* KÉO - THẢ ĐỔI VỊ TRÍ: BÀN GIÁO VIÊN <-> BẢNG ĐEN
+           Dùng Pointer Events tự dựng (không dùng native HTML5 drag-and-drop) để tạo cảm giác
+           "cầm hẳn khối lên" thật sự: 1 khối nổi (.board-swap-floating-clone) rõ nét 100% bám theo
+           con trỏ, còn khối gốc tại chỗ (.dragging) chỉ còn là 1 khoảng trống mờ nhạt báo hiệu vị trí cũ. */
+        .board-swap-item {
+            position: relative;
+            touch-action: none;
+            user-select: none;
+            transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background-color .15s ease;
+        }
+
+        .board-swap-item:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Khoảng trống để lại tại vị trí cũ trong lúc đang kéo - mờ nhạt, viền đứt nét */
+        .board-swap-item.dragging {
+            opacity: 0.22 !important;
+            transform: scale(0.97) !important;
+            box-shadow: none !important;
+            border-style: dashed !important;
+            transition: none;
+        }
+
+        /* Khối "nổi" đi theo con trỏ: rõ nét 100%, đổ bóng thật, hơi nghiêng như đang được cầm trên tay */
+        .board-swap-floating-clone {
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 1 !important;
+            transform: scale(1.06) rotate(-1.5deg);
+            box-shadow: 0 22px 30px -8px rgba(0, 0, 0, .38), 0 10px 12px -6px rgba(0, 0, 0, .22);
+            cursor: grabbing;
+            transition: none !important;
+            animation: none !important;
+        }
+
+        /* Khi đang kéo: khóa con trỏ dạng "grabbing" và chặn bôi đen chữ trên toàn trang */
+        body.board-swap-active {
+            cursor: grabbing !important;
+            user-select: none !important;
+        }
+
+        #board-blackboard.drag-hover {
+            background-color: #1c1917 !important;
+            border-color: #f59e0b !important;
+            box-shadow: 0 12px 20px -8px rgba(245, 158, 11, .45), 4px 4px 0px 0px rgba(245, 158, 11, .35) !important;
+        }
+
+        #board-teacher-desk.drag-hover {
+            background-color: #fde9b8 !important;
+            border-color: #b45309 !important;
+            box-shadow: 0 12px 20px -8px rgba(180, 83, 9, .4), 4px 4px 0px 0px rgba(180, 83, 9, .3) !important;
+        }
+
+        .board-swap-item.drag-hover::after {
+            content: "🔀 Thả để đổi chỗ";
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: .04em;
+            border-radius: inherit;
+            background: inherit;
+            color: inherit;
+        }
+
         @keyframes queueItemIn {
             from {
                 opacity: 0;
@@ -597,8 +666,7 @@
             </div>
 
             <div class="hidden md:block text-[10px] text-stone-400 font-medium mt-4 text-center leading-relaxed">
-                Mẹo: Giữ Ctrl + Click vào ô để Khóa bàn hỏng<br>
-                Mẹo: Chuột phải vào học sinh để Ghim / Bỏ ghim chỗ ngồi<br>
+                Mẹo: Chuột phải vào học sinh để mở context menu<br>
             </div>
         </aside>
 
@@ -669,13 +737,13 @@
                     <div id="classroom-grid" class="w-full max-w-7xl grid gap-[clamp(10px,1.5vw,24px)] p-1"></div>
                 </div>
 
-                <div class="w-full max-w-7xl mt-12 mb-20 grid grid-cols-12 gap-4 shrink-0">
-                    <div
-                        class="col-span-8 bg-stone-800 text-amber-50 border-2 border-stone-950 font-bold py-3.5 text-center rounded-xl shadow-[4px_4px_0px_0px_rgba(120,113,108,0.3)] tracking-widest text-xs select-none uppercase">
+                <div id="board-teacher-blackboard-row" class="w-full max-w-7xl mt-12 mb-20 grid grid-cols-12 gap-4 shrink-0">
+                    <div id="board-blackboard" title="Kéo - thả để đổi vị trí với Bàn giáo viên"
+                        class="board-swap-item col-span-8 bg-stone-800 text-amber-50 border-2 border-stone-950 font-bold py-3.5 text-center rounded-xl shadow-[4px_4px_0px_0px_rgba(120,113,108,0.3)] tracking-widest text-xs select-none uppercase cursor-grab active:cursor-grabbing">
                         🌿 BẢNG ĐEN LỚP HỌC
                     </div>
-                    <div
-                        class="col-span-4 bg-amber-100/80 border-2 border-dashed border-amber-800 text-amber-900 font-bold py-3.5 text-center rounded-xl text-xs select-none uppercase">
+                    <div id="board-teacher-desk" title="Kéo - thả để đổi vị trí với Bảng đen"
+                        class="board-swap-item col-span-4 bg-amber-100/80 border-2 border-dashed border-amber-800 text-amber-900 font-bold py-3.5 text-center rounded-xl text-xs select-none uppercase cursor-grab active:cursor-grabbing">
                         👩‍🏫 BÀN GIÁO VIÊN
                     </div>
                 </div>
@@ -1132,6 +1200,7 @@
         let pinnedSeats = {}; // Lưu các chỗ ngồi đang bị ghim: { "b1-r1-s1": true } -> học sinh ở đó sẽ không bị xáo trộn khi Tự Động / Quay vị trí
         let isWaveAnimating = false;
         let currentMenuTargetKey = null; // Lưu vị trí ô đang được chuột phải
+        let boardLayoutSwapped = false; // false = Bảng đen bên trái / Bàn GV bên phải (mặc định); true = đã đổi chỗ cho nhau
         // Tùy chỉnh sơ đồ: khi autoRows = true -> số hàng tự tính theo sĩ số (mặc định cũ).
         // Khi false -> dùng totalRows do người dùng chọn trong modal cài đặt.
         let autoRows = true;
@@ -1291,7 +1360,8 @@
                 manualRows: manualRows,
                 seatStartCorner: seatStartCorner,
                 seatDirection: seatDirection,
-                seatSnake: seatSnake
+                seatSnake: seatSnake,
+                boardLayoutSwapped: boardLayoutSwapped
             };
             localStorage.setItem('retroClassData', JSON.stringify(dataToSave));
         }
@@ -1324,10 +1394,159 @@
                 if (typeof parsed.seatSnake === 'boolean') {
                     seatSnake = parsed.seatSnake;
                 }
+                if (typeof parsed.boardLayoutSwapped === 'boolean') {
+                    boardLayoutSwapped = parsed.boardLayoutSwapped;
+                }
                 tempSeatStartCorner = seatStartCorner;
                 tempSeatDirection = seatDirection;
                 tempSeatSnake = seatSnake;
             }
+            applyBoardLayoutFromState();
+        }
+
+        // ============================================================
+        // ===========  KÉO - THẢ ĐỔI VỊ TRÍ: BÀN GIÁO VIÊN <-> BẢNG ĐEN  ===========
+        // ============================================================
+
+        // Hoán đổi 2 phần tử trong DOM (giữ nguyên toàn bộ event listener đã gắn trên chúng)
+        function swapBoardTeacherDeskPosition(elA, elB) {
+            const parent = elA.parentNode;
+            if (!parent || elA === elB) return;
+            const placeholder = document.createComment('board-swap-placeholder');
+            parent.insertBefore(placeholder, elA);
+            parent.insertBefore(elA, elB);
+            parent.insertBefore(elB, placeholder);
+            parent.removeChild(placeholder);
+
+            boardLayoutSwapped = !boardLayoutSwapped;
+            saveToLocalStorage();
+
+            // Đồng bộ hiệu ứng "hạ cánh" giống hệt hiệu ứng .drop-settle dùng khi thả học sinh vào chỗ ngồi
+            [elA, elB].forEach(el => {
+                el.classList.remove('drop-settle');
+                void el.offsetWidth;
+                el.classList.add('drop-settle');
+                el.addEventListener('animationend', () => el.classList.remove('drop-settle'), { once: true });
+            });
+        }
+
+        // Đảm bảo thứ tự DOM hiện tại khớp với trạng thái boardLayoutSwapped đã lưu (gọi khi tải trang)
+        function applyBoardLayoutFromState() {
+            const blackboard = document.getElementById('board-blackboard');
+            const teacherDesk = document.getElementById('board-teacher-desk');
+            if (!blackboard || !teacherDesk) return;
+            const parent = blackboard.parentNode;
+            if (!parent) return;
+
+            const blackboardIsFirst = !!(blackboard.compareDocumentPosition(teacherDesk) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+            if (boardLayoutSwapped && blackboardIsFirst) {
+                parent.insertBefore(teacherDesk, blackboard);
+            } else if (!boardLayoutSwapped && !blackboardIsFirst) {
+                parent.insertBefore(blackboard, teacherDesk);
+            }
+        }
+
+        // Gắn sự kiện Kéo - Thả cho Bảng đen & Bàn giáo viên.
+        // LƯU Ý: không dùng native HTML5 drag-and-drop (dataTransfer) vì trình duyệt sẽ tự tạo ra
+        // 1 "ảnh bóng mờ" (ghost image) đi theo con trỏ, chồng lên khối gốc cũng đang bị làm mờ tại chỗ
+        // -> gây cảm giác nhòe, không rõ ràng. Thay vào đó, dùng Pointer Events tự dựng: tạo ra 1 khối
+        // "nổi" (clone) rõ nét 100%, có đổ bóng, bám sát theo con trỏ chuột/ngón tay - giống hệt cảm giác
+        // "cầm hẳn khối lên" và di chuyển sang vị trí khác. Khối gốc tại chỗ chỉ còn lại như một khoảng
+        // trống mờ nhạt để báo hiệu vị trí ban đầu.
+        function initBoardTeacherDeskSwap() {
+            const items = document.querySelectorAll('.board-swap-item');
+            let draggedItem = null;
+            let floatingClone = null;
+            let hoverTarget = null;
+            let pointerOffsetX = 0;
+            let pointerOffsetY = 0;
+            let onPointerMove = null;
+            let onPointerUp = null;
+
+            function findItemUnderPointer(clientX, clientY) {
+                if (floatingClone) floatingClone.style.display = 'none';
+                const el = document.elementFromPoint(clientX, clientY);
+                if (floatingClone) floatingClone.style.display = '';
+                return el ? el.closest('.board-swap-item') : null;
+            }
+
+            function clearHoverTarget() {
+                if (hoverTarget) {
+                    hoverTarget.classList.remove('drag-hover');
+                    hoverTarget = null;
+                }
+            }
+
+            function cleanupDrag() {
+                document.removeEventListener('pointermove', onPointerMove);
+                document.removeEventListener('pointerup', onPointerUp);
+                document.removeEventListener('pointercancel', onPointerUp);
+                document.body.classList.remove('board-swap-active');
+                if (floatingClone) {
+                    floatingClone.remove();
+                    floatingClone = null;
+                }
+                if (draggedItem) draggedItem.classList.remove('dragging');
+                clearHoverTarget();
+                draggedItem = null;
+            }
+
+            items.forEach(item => {
+                item.addEventListener('pointerdown', (e) => {
+                    if (e.button !== undefined && e.button !== 0) return; // chỉ xử lý chuột trái / chạm chính
+                    e.preventDefault();
+
+                    draggedItem = item;
+                    const rect = item.getBoundingClientRect();
+                    pointerOffsetX = e.clientX - rect.left;
+                    pointerOffsetY = e.clientY - rect.top;
+
+                    // Tạo khối "nổi" - bản sao y hệt khối gốc, rõ nét 100%, bám theo con trỏ
+                    floatingClone = item.cloneNode(true);
+                    floatingClone.removeAttribute('id');
+                    floatingClone.classList.add('board-swap-floating-clone');
+                    floatingClone.style.position = 'fixed';
+                    floatingClone.style.left = rect.left + 'px';
+                    floatingClone.style.top = rect.top + 'px';
+                    floatingClone.style.width = rect.width + 'px';
+                    floatingClone.style.height = rect.height + 'px';
+                    floatingClone.style.margin = '0';
+                    document.body.appendChild(floatingClone);
+
+                    // Khối gốc tại chỗ trở thành khoảng trống mờ nhạt, báo hiệu vị trí ban đầu
+                    item.classList.add('dragging');
+                    document.body.classList.add('board-swap-active');
+
+                    onPointerMove = (ev) => {
+                        if (!floatingClone) return;
+                        floatingClone.style.left = (ev.clientX - pointerOffsetX) + 'px';
+                        floatingClone.style.top = (ev.clientY - pointerOffsetY) + 'px';
+
+                        const target = findItemUnderPointer(ev.clientX, ev.clientY);
+                        if (target !== hoverTarget) {
+                            clearHoverTarget();
+                            if (target && target !== draggedItem) {
+                                target.classList.add('drag-hover');
+                                hoverTarget = target;
+                            }
+                        }
+                    };
+
+                    onPointerUp = (ev) => {
+                        const target = findItemUnderPointer(ev.clientX, ev.clientY);
+                        const source = draggedItem;
+                        cleanupDrag();
+                        if (target && source && target !== source) {
+                            swapBoardTeacherDeskPosition(source, target);
+                        }
+                    };
+
+                    document.addEventListener('pointermove', onPointerMove);
+                    document.addEventListener('pointerup', onPointerUp);
+                    document.addEventListener('pointercancel', onPointerUp);
+                });
+            });
         }
 
         // ============================================================
@@ -1493,6 +1712,22 @@
                 emoji: '⚙️',
                 title: 'Bước 5: Tùy chỉnh & xuất ảnh',
                 desc: 'Vào "⚙️ Cài Đặt" để chỉnh số tổ/số hàng theo ý muốn. Khi hoàn tất, bấm "📸 Lưu" để xuất sơ đồ thành ảnh PNG đẹp mắt.'
+            },
+            {
+                emoji: '🔄',
+                title: 'Mẹo: Đổi chỗ Bảng đen & Bàn giáo viên',
+                desc: 'Muốn đổi Bảng đen và Bàn giáo viên sang bên còn lại? Chỉ cần <b>kéo</b> một trong hai khối này rồi <b>thả</b> lên khối kia là vị trí Trái - Phải sẽ hoán đổi cho nhau ngay lập tức.',
+                visual: `
+            <div class="flex items-center justify-center gap-2 mb-1">
+                <div class="bg-stone-800 text-amber-50 text-[10px] font-bold py-2 px-3 rounded-lg border-2 border-stone-950 shadow-[2px_2px_0px_0px_rgba(41,37,36,1)] whitespace-nowrap">
+                    🌿 BẢNG ĐEN
+                </div>
+                <span class="text-lg text-stone-400">⇄</span>
+                <div class="bg-amber-100/80 text-amber-900 text-[10px] font-bold py-2 px-3 rounded-lg border-2 border-dashed border-amber-800 whitespace-nowrap">
+                    👩‍🏫 BÀN GV
+                </div>
+            </div>
+        `
             },
             {
                 title: 'Bước 6: Khóa nhanh bàn hỏng',
@@ -1852,6 +2087,9 @@
             // --- KHỞI TẠO: TRỢ GIÚP / PHÍM TẮT / ONBOARDING CHO NGƯỜI DÙNG MỚI ---
             initHelpAndShortcuts();
             initOnboardingTour();
+
+            // --- KHỞI TẠO: KÉO - THẢ ĐỔI VỊ TRÍ BÀN GIÁO VIÊN <-> BẢNG ĐEN ---
+            initBoardTeacherDeskSwap();
         });
 
         // --- LOGIC CONTEXT MENU ---
@@ -3079,6 +3317,7 @@
             });
         }
         document.getElementById('search-waiting').addEventListener('input', renderWaitingListUI);
+        // setTimeout(() => {document.getElementById('btn-random-all').click();}, 200)
     </script>
 </body>
 
